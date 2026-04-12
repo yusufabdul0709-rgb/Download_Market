@@ -1,0 +1,19 @@
+# ─── Node ────────────────────────────────────────
+node_modules/
+
+# ─── Environment variables ────────────────────────
+.env
+
+# ─── Logs ────────────────────────────────────────
+logs/
+*.log
+
+# ─── Temp downloads (auto-generated) ─────────────
+temp/*
+!temp/.gitkeep
+
+# ─── OS / IDE ────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
