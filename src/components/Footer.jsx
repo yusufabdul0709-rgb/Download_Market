@@ -1,0 +1,106 @@
+import { Link } from 'react-router-dom';
+import { Download, Youtube, Instagram, Github, Mail, Heart } from 'lucide-react';
+
+const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <footer className="relative mt-auto border-t border-white/5">
+      <div className="absolute inset-0 bg-gradient-to-t from-bg-dark to-transparent pointer-events-none" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          {/* Brand */}
+          <div className="lg:col-span-1">
+            <Link to="/" className="flex items-center gap-2.5 mb-4">
+              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+                <Download size={20} className="text-white" />
+              </div>
+              <span className="text-xl font-bold text-white">
+                Download<span className="text-primary">Market</span>
+              </span>
+            </Link>
+            <p className="text-text-muted text-sm leading-relaxed max-w-xs">
+              The fastest and most reliable way to download your favorite videos and media from YouTube & Instagram.
+            </p>
+          </div>
+
+          {/* YouTube Links */}
+          <div>
+            <h4 className="flex items-center gap-2 text-white font-semibold mb-4">
+              <Youtube size={18} className="text-youtube" />
+              YouTube
+            </h4>
+            <ul className="space-y-2.5">
+              <li>
+                <Link to="/youtube/video" className="text-text-muted text-sm hover:text-white transition-colors">
+                  Video Downloader
+                </Link>
+              </li>
+              <li>
+                <Link to="/youtube/shorts" className="text-text-muted text-sm hover:text-white transition-colors">
+                  Shorts Downloader
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Instagram Links */}
+          <div>
+            <h4 className="flex items-center gap-2 text-white font-semibold mb-4">
+              <Instagram size={18} className="text-instagram" />
+              Instagram
+            </h4>
+            <ul className="space-y-2.5">
+              <li>
+                <Link to="/instagram/reels" className="text-text-muted text-sm hover:text-white transition-colors">
+                  Reels Downloader
+                </Link>
+              </li>
+              <li>
+                <Link to="/instagram/post" className="text-text-muted text-sm hover:text-white transition-colors">
+                  Post Downloader
+                </Link>
+              </li>
+              <li>
+                <Link to="/instagram/audio" className="text-text-muted text-sm hover:text-white transition-colors">
+                  Audio Extractor
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h4 className="text-white font-semibold mb-4">Support</h4>
+            <ul className="space-y-2.5">
+              <li>
+                <a href="#" className="text-text-muted text-sm hover:text-white transition-colors flex items-center gap-2">
+                  <Mail size={14} />
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-text-muted text-sm hover:text-white transition-colors flex items-center gap-2">
+                  <Github size={14} />
+                  GitHub
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-10 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-text-muted text-sm">
+            © {currentYear} DownloadMarket. All rights reserved.
+          </p>
+          <p className="text-text-muted text-sm flex items-center gap-1">
+            Made with <Heart size={14} className="text-danger fill-danger" /> for the internet
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
