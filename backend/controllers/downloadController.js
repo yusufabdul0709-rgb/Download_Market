@@ -3,19 +3,57 @@
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { spawn } = require('child_process');
 
 const { createJob, getJob, updateJob } = require('../services/jobStore');
+const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
 const { buildDownloadArgs, parseProgress, fetchMetadata } = require('../utils/ytdlp');
+const { instagramGetUrl } = require('instagram-url-direct');
+const axios = require('axios');
+const archiver = require('archiver');
+const { retryWithBackoff, isRetryableError } = require('../utils/retryHelper');
 const { asyncHandler, AppError } = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 const config = require('../config');
 
 const TEMP_DIR = path.resolve(config.tempDir);
 
+// ── Deno PATH for download spawns ─────────────────────────────────────────────
+const DENO_BIN_DIR = path.join(os.homedir(), '.deno', 'bin');
+const spawnEnv = { ...process.env };
+if (fs.existsSync(DENO_BIN_DIR)) {
+  const sep = process.platform === 'win32' ? ';' : ':';
+  spawnEnv.PATH = `${DENO_BIN_DIR}${sep}${process.env.PATH || ''}`;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Sanitise a string for use as a safe filename.
+ * Removes/replaces characters that are illegal on Windows/macOS/Linux.
+ *
+ * @param {string} name
+ * @param {number} [maxLength=200]
+ * @returns {string}
+ */
+function sanitizeFilename(name, maxLength = 200) {
+  if (!name) return 'download';
+
+  return name
+    // Remove characters illegal in filenames on any OS
+    .replace(/[<>:"\/?*|\\]/g, '')
+    // Replace sequences of whitespace / control chars with a single space
+    .replace(/[\s\x00-\x1f]+/g, ' ')
+    // Trim leading/trailing dots and spaces (Windows rejects these)
+    .replace(/^[\s.]+|[\s.]+$/g, '')
+    // Limit length (leave room for extension)
+    .substring(0, maxLength)
+    .trim()
+    || 'download';
+}
 
 /**
  * Find output file produced by yt-dlp (extension may change after merge).
@@ -25,8 +63,33 @@ function findOutputFile(expectedBase) {
   const baseName = path.basename(expectedBase);
   try {
     const files = fs.readdirSync(dir);
-    const match = files.find((f) => f.startsWith(baseName));
-    return match ? path.join(dir, match) : null;
+    // Find all files that start with the jobId
+    const matches = files.filter((f) => f.startsWith(baseName));
+    
+    if (matches.length === 0) return null;
+
+    // Filter out intermediate fragments (like .f140.m4a, .temp.mp4, .part)
+    const finalFiles = matches.filter(f => !f.match(/\.f\d+\./) && !f.endsWith('.part') && !f.endsWith('.ytdl'));
+
+    // Prefer mp4, then mp3, then webm
+    const preferredOrder = ['.mp4', '.mp3', '.webm', '.mkv', '.m4a'];
+    
+    let bestMatch = null;
+    let bestScore = Infinity;
+
+    for (const f of (finalFiles.length > 0 ? finalFiles : matches)) {
+      const ext = path.extname(f).toLowerCase();
+      const score = preferredOrder.indexOf(ext);
+      // If extension is found in preferredOrder, score is positive.
+      // We want the lowest score (0 for .mp4 is best).
+      const currentScore = score !== -1 ? score : 999;
+      if (currentScore < bestScore) {
+        bestScore = currentScore;
+        bestMatch = f;
+      }
+    }
+
+    return bestMatch ? path.join(dir, bestMatch) : null;
   } catch {
     return null;
   }
@@ -41,7 +104,9 @@ function runDownload(args, jobId, timeoutMs = 300_000) {
 
     const proc = spawn(ytdlpBin, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: process.platform === 'win32',
+      shell: false,
+      windowsHide: true,
+      env: spawnEnv,
     });
 
     const timer = setTimeout(() => {
@@ -81,67 +146,217 @@ function runDownload(args, jobId, timeoutMs = 300_000) {
 }
 
 /**
+ * Downloads a single direct HTTP URL to a file.
+ */
+async function downloadDirectMedia(url, outputPath) {
+  const response = await axios({
+    method: 'GET',
+    url: url,
+    responseType: 'stream',
+    timeout: 60000,
+  });
+  const writer = fs.createWriteStream(outputPath);
+  response.data.pipe(writer);
+  return new Promise((resolve, reject) => {
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+  });
+}
+
+/**
+ * Extracts audio out of an MP4 file into MP3 using ffmpeg.
+ */
+async function extractAudio(inputPath, outputPath) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('ffmpeg', [
+      '-y', '-i', inputPath,
+      '-vn', '-ar', '44100', '-ac', '2', '-b:a', '128k',
+      outputPath
+    ], { stdio: 'ignore' });
+
+    proc.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg exited with code ${code}`));
+    });
+
+    proc.on('error', (err) => reject(new Error(`Failed to start ffmpeg: ${err.message}`)));
+  });
+}
+
+/**
+ * Handle Instagram specific logic using direct fbcdn links.
+ */
+async function processInstagramJob(jobId, job) {
+  const outBase = path.join(TEMP_DIR, jobId);
+  
+  // Re-fetch direct links (since they expire)
+  const raw = await instagramGetUrl(job.url);
+  if (!raw.url_list || raw.url_list.length === 0) {
+    throw new Error('Failed to extract direct media link from Instagram.');
+  }
+
+  const title = sanitizeFilename(raw.post_info?.caption || 'Instagram Post');
+  updateJob(jobId, { progress: 30 });
+
+  let outputFile;
+  let prettyName;
+
+  // Single Media / Audio Extraction
+  if (raw.media_details.length === 1) {
+    const m = raw.media_details[0];
+    const isImage = m.type === 'image';
+    
+    if (job.formatId === 'audio' && !isImage) {
+      // Audio Extraction
+      const tempVideo = `${outBase}.temp.mp4`;
+      outputFile = `${outBase}.mp3`;
+      prettyName = `${title}.mp3`;
+      
+      updateJob(jobId, { progress: 40 });
+      await downloadDirectMedia(m.url, tempVideo);
+      
+      updateJob(jobId, { progress: 80 });
+      await extractAudio(tempVideo, outputFile);
+      
+      // Cleanup temp
+      fs.unlink(tempVideo, () => {});
+    } else {
+      // Standard direct download
+      const ext = isImage ? '.jpg' : '.mp4';
+      outputFile = `${outBase}${ext}`;
+      prettyName = `${title}${ext}`;
+      
+      await downloadDirectMedia(m.url, outputFile);
+    }
+  } else {
+    // Carousel - create ZIP
+    outputFile = `${outBase}.zip`;
+    prettyName = `${title} (Carousel).zip`;
+    
+    const output = fs.createWriteStream(outputFile);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
+    const archivePromise = new Promise((resolve, reject) => {
+      output.on('close', resolve);
+      archive.on('warning', err => { if (err.code !== 'ENOENT') reject(err) });
+      archive.on('error', reject);
+    });
+
+    archive.pipe(output);
+
+    // Download each item as a stream and append to zip
+    for (let i = 0; i < raw.media_details.length; i++) {
+      const m = raw.media_details[i];
+      const ext = m.type === 'image' ? '.jpg' : '.mp4';
+      const response = await axios({ method: 'GET', url: m.url, responseType: 'stream' });
+      archive.append(response.data, { name: `${title}_${i+1}${ext}` });
+    }
+    
+    await archive.finalize();
+    await archivePromise;
+  }
+
+  return { outputFile, prettyName };
+}
+
+/**
+ * Handle YouTube specific logic using yt-dlp.
+ */
+async function processYouTubeJob(jobId, job) {
+  const { url, type } = job;
+  const outBase = path.join(TEMP_DIR, jobId);
+
+  let metadata;
+  try {
+    metadata = await fetchMetadata(url);
+  } catch (err) {
+    throw new Error(`Metadata fetch failed: ${err.message}`);
+  }
+
+  const maxDur = config.ytdlp.maxDurationSeconds;
+  if (maxDur > 0 && metadata.duration && metadata.duration > maxDur) {
+    throw new Error(`Video duration exceeds limit.`);
+  }
+
+  const formatId = job.formatId || null;
+  const outTemplate = `${outBase}.%(ext)s`;
+  
+  // Custom build args to support exact requested user commands
+  const args = [];
+  args.push('--no-playlist', '--no-warnings');
+
+  if (formatId === 'audio' || type === 'audio') {
+    // Audio: yt-dlp -x --audio-format mp3 <url>
+    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
+  } else {
+    // Video: yt-dlp -f <formatId> -o ./temp/%(title)s.%(ext)s <url>
+    const fId = (formatId && formatId !== 'best') ? `${formatId}+bestaudio/best` : 'bestvideo+bestaudio/best';
+    args.push('-f', fId, '--merge-output-format', 'mp4', '-o', outTemplate, url);
+  }
+
+  updateJob(jobId, { progress: 5 });
+
+  await retryWithBackoff(
+    () => runDownload(args, jobId),
+    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `download-${jobId}` }
+  );
+
+  const outputFile = findOutputFile(outBase);
+  if (!outputFile || !fs.existsSync(outputFile)) {
+    throw new Error('Output file not found after download.');
+  }
+
+  const ext = path.extname(outputFile).toLowerCase() || '.mp4';
+  const videoTitle = metadata?.title || metadata?.fulltitle || 'YouTube_Video';
+  const prettyName = sanitizeFilename(videoTitle) + ext;
+
+  return { outputFile, prettyName };
+}
+
+/**
  * Process a download job in-process (no worker/queue).
+ * Wrapped in the download concurrency limiter.
  */
 async function processJob(jobId) {
   const job = getJob(jobId);
   if (!job) return;
 
-  const { url, type } = job;
-
-  try {
-    updateJob(jobId, { status: 'processing', progress: 0 });
-    ensureTempDir();
-
-    // Check duration
-    let metadata;
+  // Enqueue through the concurrency-limited download queue
+  await enqueueDownload(async () => {
     try {
-      metadata = await fetchMetadata(url);
+      updateJob(jobId, { status: 'processing', progress: 0 });
+      ensureTempDir();
+
+      let result;
+      if (job.platform === 'instagram') {
+        result = await processInstagramJob(jobId, job);
+      } else {
+        result = await processYouTubeJob(jobId, job);
+      }
+
+      updateJob(jobId, { progress: 100 });
+
+      const diskFileName = path.basename(result.outputFile);
+      const downloadUrl = `${config.baseUrl}/api/download/file/${jobId}/${encodeURIComponent(diskFileName)}`;
+
+      updateJob(jobId, {
+        status: 'completed',
+        progress: 100,
+        filePath: result.outputFile,
+        downloadUrl,
+        filename: result.prettyName,
+        diskFilename: diskFileName,
+      });
+
+      logger.info(`[Download] Job ${jobId} completed → ${result.prettyName}`);
     } catch (err) {
-      throw new Error(`Metadata fetch failed: ${err.message}`);
+      logger.error(`[Download] Job ${jobId} failed: ${err.message}`);
+      updateJob(jobId, {
+        status: 'failed',
+        error: err.message,
+      });
     }
-
-    const maxDur = config.ytdlp.maxDurationSeconds;
-    if (maxDur > 0 && metadata.duration && metadata.duration > maxDur) {
-      throw new Error(
-        `Video duration (${Math.ceil(metadata.duration / 60)} min) exceeds the limit of ${maxDur / 60} min.`
-      );
-    }
-
-    // Build args
-    const formatId = job.formatId || null;
-    const outBase = path.join(TEMP_DIR, jobId);
-    const outTemplate = `${outBase}.%(ext)s`;
-    const args = buildDownloadArgs({ url, type, formatId, outPath: outTemplate });
-
-    updateJob(jobId, { progress: 5 });
-    await runDownload(args, jobId);
-
-    // Find file
-    const outputFile = findOutputFile(outBase);
-    if (!outputFile || !fs.existsSync(outputFile)) {
-      throw new Error('Output file not found after download.');
-    }
-
-    const fileName = path.basename(outputFile);
-    const downloadUrl = `${config.baseUrl}/api/download/file/${jobId}/${encodeURIComponent(fileName)}`;
-
-    updateJob(jobId, {
-      status: 'completed',
-      progress: 100,
-      filePath: outputFile,
-      downloadUrl,
-      filename: fileName,
-    });
-
-    logger.info(`[Download] Job ${jobId} completed → ${outputFile}`);
-  } catch (err) {
-    logger.error(`[Download] Job ${jobId} failed: ${err.message}`);
-    updateJob(jobId, {
-      status: 'failed',
-      error: err.message,
-    });
-  }
+  });
 }
 
 // ── Submit Download Job ───────────────────────────────────────────────────────
@@ -174,12 +389,13 @@ const submitDownload = asyncHandler(async (req, res) => {
     url: urlCheck.url.href,
     platform,
     type,
+    formatId, // Pass formatId so processJob knows if it's 'audio' etc.
   });
 
   // Store formatId on the job for processJob to use
   jobRecord.formatId = formatId || null;
 
-  // Start processing in background (non-blocking)
+  // Start processing in background (non-blocking, concurrency-controlled)
   processJob(jobId).catch(() => {});
 
   logger.info(`[Controller] Started job ${jobId} — ${platform}/${type}`);
@@ -240,12 +456,15 @@ const serveFile = asyncHandler(async (req, res) => {
     throw new AppError('File not ready or job not found.', 404, 'FILE_NOT_READY');
   }
 
-  const safeFilename = path.basename(decodeURIComponent(filename));
   const filePath = record.filePath;
 
   if (!filePath || !fs.existsSync(filePath)) {
     throw new AppError('File has already been deleted or expired.', 410, 'FILE_GONE');
   }
+
+  // Use the human-friendly filename (video title) for the download,
+  // NOT the UUID-based disk filename
+  const prettyFilename = record.filename || path.basename(decodeURIComponent(filename));
 
   const stat = fs.statSync(filePath);
   const ext = path.extname(filePath).slice(1).toLowerCase();
@@ -258,7 +477,12 @@ const serveFile = asyncHandler(async (req, res) => {
     ogg: 'audio/ogg',
   };
 
-  res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+  // RFC 5987 encoded filename for Unicode support + ASCII fallback
+  const asciiName = prettyFilename.replace(/[^\x20-\x7E]/g, '_');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(prettyFilename)}`
+  );
   res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
   res.setHeader('Content-Length', stat.size);
   res.setHeader('X-Job-Id', jobId);

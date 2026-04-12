@@ -59,8 +59,8 @@ const InstagramPost = () => {
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
             Download Instagram Posts
           </h1>
-          <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            Save images, carousels, and video posts from Instagram.
+          <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+            Save video posts, Reels, and IGTV from Instagram.
           </p>
         </motion.div>
 

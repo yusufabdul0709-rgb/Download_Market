@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Download, FileVideo, FileAudio, Loader2 } from 'lucide-react';
+import { Download, FileVideo, FileAudio, FileImage, FileArchive, Loader2 } from 'lucide-react';
 import { formatFileSize } from '../utils/helpers';
 
 const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {} }) => {
@@ -16,6 +16,8 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
 
   const getIcon = (format) => {
     if (format.format === 'mp3' || format.type === 'audio') return FileAudio;
+    if (format.format === 'jpg' || format.format === 'png' || format.format === 'webp') return FileImage;
+    if (format.format === 'zip') return FileArchive;
     return FileVideo;
   };
 

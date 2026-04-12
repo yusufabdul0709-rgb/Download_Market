@@ -56,7 +56,7 @@ function validatePlatform(platform) {
 /**
  * Validate the media type field.
  */
-const ALLOWED_TYPES = ['video', 'shorts', 'reel', 'post', 'audio'];
+const ALLOWED_TYPES = ['video', 'shorts', 'reel', 'post', 'audio', 'image', 'carousel'];
 
 function validateMediaType(type) {
   if (!type || !ALLOWED_TYPES.includes(type)) {

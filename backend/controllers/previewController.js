@@ -21,7 +21,7 @@ const getPreview = asyncHandler(async (req, res) => {
 
   logger.info(`[Preview] Fetching preview for ${urlCheck.url.href}`);
 
-  const preview = await getMediaPreview(urlCheck.url.href);
+  const preview = await getMediaPreview(urlCheck.url.href, urlCheck.platform);
 
   res.json({
     success: true,

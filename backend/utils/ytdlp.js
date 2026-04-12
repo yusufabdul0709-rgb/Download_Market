@@ -1,8 +1,106 @@
 'use strict';
 
 const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const config = require('../config');
 const logger = require('./logger');
+const { retryWithBackoff, isRetryableError } = require('./retryHelper');
+
+// ── Deno PATH injection ───────────────────────────────────────────────────────
+// yt-dlp requires Deno as its JavaScript runtime to solve YouTube's anti-bot
+// challenges. Deno installs to ~/.deno/bin which may not be in the inherited
+// Node.js process PATH. We explicitly add it.
+const DENO_BIN_DIR = path.join(os.homedir(), '.deno', 'bin');
+const spawnEnv = { ...process.env };
+if (fs.existsSync(DENO_BIN_DIR)) {
+  const sep = process.platform === 'win32' ? ';' : ':';
+  spawnEnv.PATH = `${DENO_BIN_DIR}${sep}${process.env.PATH || ''}`;
+  logger.info(`[yt-dlp] Deno runtime found at ${DENO_BIN_DIR}`);
+} else {
+  logger.warn(`[yt-dlp] Deno not found at ${DENO_BIN_DIR} — YouTube extraction may be degraded`);
+}
+
+// ── Shared base arguments ─────────────────────────────────────────────────────
+
+/**
+ * Build the common yt-dlp flags that should be present on EVERY invocation.
+ * These flags are the primary defence against YouTube 429 / bot detection.
+ *
+ * @returns {string[]}
+ */
+function baseArgs() {
+  const args = [
+    '--no-playlist',
+    '--no-warnings',
+    '--no-check-certificates',
+    // Realistic browser User-Agent — makes yt-dlp look like Chrome, not a script
+    '--user-agent', config.ytdlp.userAgent,
+    // Referer header — mimics navigation from YouTube itself
+    '--referer', 'https://www.youtube.com/',
+    // Retry transient HTTP errors internally
+    '--extractor-retries', '3',
+    // Pace requests — sleep 1–3 seconds between sub-requests
+    '--sleep-interval', '1',
+    '--max-sleep-interval', '3',
+  ];
+
+  // ── Cookies file (the #1 most important fix) ────────────────────────────
+  // Without cookies, YouTube treats yt-dlp as an anonymous bot and aggressively
+  // rate-limits it (HTTP 429). With cookies from a logged-in browser session,
+  // YouTube sees a real user.
+  if (config.ytdlp.cookiesPath && fs.existsSync(config.ytdlp.cookiesPath)) {
+    args.push('--cookies', config.ytdlp.cookiesPath);
+    logger.debug(`[yt-dlp] Using cookies from ${config.ytdlp.cookiesPath}`);
+  }
+
+  // ── Proxy (optional) ───────────────────────────────────────────────────
+  if (config.ytdlp.proxy) {
+    args.push('--proxy', config.ytdlp.proxy);
+  }
+
+  // ── Instagram-specific ─────────────────────────────────────────────────
+  args.push('--extractor-args', 'instagram:compatible_formats');
+
+  return args;
+}
+
+// ── URL normalisation ─────────────────────────────────────────────────────────
+
+/**
+ * Normalise YouTube Shorts URLs to standard /watch?v= format.
+ * Shorts URLs sometimes cause extraction issues on certain yt-dlp versions.
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+function normaliseYouTubeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Only touch YouTube domains
+    if (!hostname.includes('youtube.com') && !hostname.includes('youtu.be')) {
+      return url;
+    }
+
+    // Convert /shorts/VIDEO_ID → /watch?v=VIDEO_ID
+    const shortsMatch = parsed.pathname.match(/^\/shorts\/([a-zA-Z0-9_-]+)/);
+    if (shortsMatch) {
+      const videoId = shortsMatch[1];
+      const normalised = `https://www.youtube.com/watch?v=${videoId}`;
+      logger.debug(`[yt-dlp] Normalised Shorts URL: ${url} → ${normalised}`);
+      return normalised;
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+// ── Core runner ───────────────────────────────────────────────────────────────
 
 /**
  * Run yt-dlp with the given arguments.
@@ -25,6 +123,7 @@ function runYtdlp(args, { timeoutMs = 120_000, onStderr } = {}) {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
       windowsHide: true,
+      env: spawnEnv,
     });
 
     let stdout = '';
@@ -63,32 +162,44 @@ function runYtdlp(args, { timeoutMs = 120_000, onStderr } = {}) {
   });
 }
 
+// ── Public API ────────────────────────────────────────────────────────────────
+
 /**
  * Fetch raw JSON metadata for a URL.
+ * Includes retry with backoff for transient 429 errors.
  *
  * @param {string} url
  * @returns {Promise<object>}
  */
 async function fetchMetadata(url) {
-  const args = [
-    '-J',
-    '--no-playlist',
-    '--no-warnings',
-    '--no-check-certificates',
-    '--extractor-args', 'instagram:compatible_formats',
-    url,
-  ];
+  const normalisedUrl = normaliseYouTubeUrl(url);
 
-  const json = await runYtdlp(args, {
-    timeoutMs: 45_000,
-  });
+  return retryWithBackoff(
+    async () => {
+      const args = [
+        ...baseArgs(),
+        '-J',            // dump JSON
+        normalisedUrl,
+      ];
 
-  try {
-    return JSON.parse(json);
-  } catch (parseErr) {
-    logger.error('[yt-dlp] Failed to parse JSON output');
-    throw new Error('Failed to parse media information from the server.');
-  }
+      const json = await runYtdlp(args, {
+        timeoutMs: 45_000,
+      });
+
+      try {
+        return JSON.parse(json);
+      } catch (parseErr) {
+        logger.error('[yt-dlp] Failed to parse JSON output');
+        throw new Error('Failed to parse media information from the server.');
+      }
+    },
+    {
+      maxRetries: 2,
+      initialDelay: 3_000,
+      shouldRetry: isRetryableError,
+      label: 'fetchMetadata',
+    }
+  );
 }
 
 /**
@@ -101,10 +212,10 @@ async function fetchMetadata(url) {
  * @param {string}  opts.outPath    output template (yt-dlp -o)
  */
 function buildDownloadArgs({ url, type, formatId, outPath }) {
+  const normalisedUrl = normaliseYouTubeUrl(url);
+
   const args = [
-    '--no-playlist',
-    '--no-warnings',
-    '--no-check-certificates',
+    ...baseArgs(),
   ];
 
   if (type === 'audio') {
@@ -121,7 +232,7 @@ function buildDownloadArgs({ url, type, formatId, outPath }) {
   args.push(
     '--merge-output-format', 'mp4',
     '-o', outPath,
-    url
+    normalisedUrl
   );
 
   return args;
@@ -137,4 +248,4 @@ function parseProgress(line) {
   return null;
 }
 
-module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress };
+module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress, normaliseYouTubeUrl };

@@ -60,9 +60,11 @@ axiosInstance.interceptors.response.use(
     } else if (status === 410) {
       message = 'File has expired. Please start a new download.';
     } else if (status === 429) {
-      message = 'Too many requests. Please wait a moment and try again.';
+      message = serverMessage || 'Too many requests. Please wait a moment and try again.';
     } else if (status === 500) {
       message = serverMessage || 'Server error. Please try again later.';
+    } else if (status === 502) {
+      message = 'Server is currently offline or unreachable. Please verify the backend is running.';
     } else if (status === 503) {
       message = 'Download service is temporarily unavailable. Please try again later.';
     } else if (status === 504) {

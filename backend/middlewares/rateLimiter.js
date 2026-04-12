@@ -4,6 +4,14 @@ const rateLimit = require('express-rate-limit');
 const config = require('../config');
 
 /**
+ * Key generator that respects X-Forwarded-For for proxy/deployment scenarios.
+ * Falls back to req.ip for direct connections.
+ */
+const keyGenerator = (req) => {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+};
+
+/**
  * General API rate limiter.
  * Applied to all /api routes.
  */
@@ -12,6 +20,7 @@ const generalLimiter = rateLimit({
   max: config.rateLimit.max,
   standardHeaders: true,   // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false,
+  keyGenerator,
   message: {
     success: false,
     error: 'Too many requests — please slow down.',
@@ -32,6 +41,7 @@ const downloadLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator,
   message: {
     success: false,
     error: 'Too many download requests — please wait a minute.',
@@ -48,6 +58,7 @@ const previewLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator,
   message: {
     success: false,
     error: 'Too many preview requests.',

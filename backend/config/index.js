@@ -2,9 +2,11 @@
 
 require('dotenv').config();
 
+const path = require('path');
+
 /**
  * Central configuration object.
- * Stripped of Redis / BullMQ — runs fully in-memory.
+ * Runs fully in-memory — no Redis required.
  */
 const config = {
   // ── Server ──────────────────────────────────────────────────────────────
@@ -22,6 +24,23 @@ const config = {
     binary: process.env.YTDLP_PATH || 'yt-dlp',
     maxDurationSeconds:
       parseInt(process.env.MAX_DURATION_SECONDS, 10) || 3600,
+    // Path to Netscape-format cookies.txt file exported from your browser.
+    // This is the #1 fix for YouTube bot detection / 429 errors.
+    cookiesPath: process.env.YTDLP_COOKIES_PATH
+      ? path.resolve(process.env.YTDLP_COOKIES_PATH)
+      : null,
+    // Realistic browser User-Agent to avoid bot fingerprinting
+    userAgent:
+      process.env.YTDLP_USER_AGENT ||
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    // Optional: SOCKS5 or HTTP proxy URL for rotating IPs
+    proxy: process.env.YTDLP_PROXY || null,
+  },
+
+  // ── Concurrency control ─────────────────────────────────────────────────
+  concurrency: {
+    maxDownloads: parseInt(process.env.MAX_CONCURRENT_DOWNLOADS, 10) || 2,
+    maxPreviews: parseInt(process.env.MAX_CONCURRENT_PREVIEWS, 10) || 3,
   },
 
   // ── File handling ────────────────────────────────────────────────────────
