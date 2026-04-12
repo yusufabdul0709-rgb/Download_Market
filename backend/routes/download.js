@@ -17,16 +17,16 @@ const router = Router();
 router.post('/', downloadLimiter, submitDownload);
 
 /**
+ * GET /api/download/file/:jobId/:filename
+ * Stream the completed file to the client.
+ * NOTE: This route MUST be defined BEFORE /:jobId so Express matches it first.
+ */
+router.get('/file/:jobId/:filename', serveFile);
+
+/**
  * GET /api/download/:jobId
  * Poll the status of an existing job.
  */
 router.get('/:jobId', getJobStatus);
-
-/**
- * GET /api/download/file/:jobId/:filename
- * Stream the completed file to the client.
- * NOTE: this route must be defined BEFORE /:jobId so Express matches it first.
- */
-router.get('/file/:jobId/:filename', serveFile);
 
 module.exports = router;

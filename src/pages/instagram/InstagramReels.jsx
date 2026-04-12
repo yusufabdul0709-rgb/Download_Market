@@ -40,24 +40,26 @@ const InstagramReels = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
-      <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-instagram/5 to-transparent pointer-events-none" />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="blob-pink top-[-100px] left-[-100px]" />
+      <div className="blob-violet bottom-[-100px] right-[-100px]" />
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-instagram/10 rounded-full text-instagram text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-instagram/10 border border-instagram/20 rounded-full text-instagram text-sm font-medium mb-4 shadow-sm">
             <Film size={18} />
             Instagram Reels Downloader
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
             Download Instagram Reels
           </h1>
-          <p className="text-text-secondary max-w-lg mx-auto">
+          <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Save Instagram Reels in full quality. Vertical video optimized.
           </p>
         </motion.div>
@@ -127,10 +129,10 @@ const InstagramReels = () => {
             animate={{ opacity: 1 }}
             className="text-center py-16"
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-instagram/10 flex items-center justify-center">
-              <Film size={36} className="text-instagram/60" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white border border-instagram/10 shadow-lg shadow-instagram/5 flex items-center justify-center">
+              <Film size={36} className="text-instagram/80" />
             </div>
-            <h3 className="text-white/60 text-lg font-medium mb-2">No Reel loaded</h3>
+            <h3 className="text-text-primary text-lg font-bold mb-2">No Reel loaded</h3>
             <p className="text-text-muted text-sm max-w-md mx-auto">
               Paste an Instagram Reel URL above and click Fetch to preview and download.
             </p>

@@ -18,21 +18,21 @@ const Button = ({
 
   const variants = {
     primary:
-      'bg-primary hover:bg-primary-light text-white shadow-lg shadow-primary/25 hover:shadow-primary/40',
+      'bg-primary hover:bg-primary-light text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 border border-primary/10',
     secondary:
-      'bg-secondary hover:bg-secondary-light text-white shadow-lg shadow-secondary/25 hover:shadow-secondary/40',
+      'bg-secondary hover:bg-secondary-light text-white shadow-lg shadow-secondary/20 hover:shadow-secondary/30 border border-secondary/10',
     outline:
-      'border-2 border-primary text-primary hover:bg-primary hover:text-white',
+      'border-2 border-primary/20 text-primary hover:bg-primary/5',
     ghost:
-      'text-text-secondary hover:text-white hover:bg-bg-surface-light',
+      'text-text-secondary hover:text-primary hover:bg-primary/5',
     danger:
-      'bg-danger hover:bg-red-600 text-white shadow-lg shadow-danger/25',
+      'bg-danger/10 hover:bg-danger/20 text-danger shadow-sm border border-danger/20',
     youtube:
-      'bg-youtube hover:bg-red-700 text-white shadow-lg shadow-youtube/25',
+      'bg-white text-youtube shadow-lg shadow-youtube/10 hover:shadow-youtube/20 border border-youtube/20 hover:bg-youtube/5',
     instagram:
-      'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white shadow-lg shadow-instagram/25 hover:shadow-instagram/40',
+      'bg-white text-instagram shadow-lg shadow-instagram/10 hover:shadow-instagram/20 border border-instagram/20 hover:bg-instagram/5',
     glass:
-      'glass text-white hover:bg-bg-surface-light',
+      'glass text-text-primary hover:bg-white',
   };
 
   const sizes = {

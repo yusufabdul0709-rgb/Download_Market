@@ -22,7 +22,7 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
   const getQualityColor = (quality) => {
     if (!quality) return 'text-text-secondary';
     if (quality.includes('1080')) return 'text-secondary';
-    if (quality.includes('720')) return 'text-primary-light';
+    if (quality.includes('720')) return 'text-accent';
     if (quality.includes('320')) return 'text-secondary';
     return 'text-text-secondary';
   };
@@ -39,7 +39,7 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
       transition={{ duration: 0.4, delay: 0.2 }}
       className="w-full"
     >
-      <h4 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
+      <h4 className="text-text-primary font-semibold text-lg mb-4 flex items-center gap-2">
         <Download size={20} className="text-primary" />
         Download Options
       </h4>
@@ -58,7 +58,7 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
             <span>Processing...</span>
             <span>{Math.round(downloadState.progress)}%</span>
           </div>
-          <div className="w-full h-2 bg-bg-surface-light rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-bg-surface-lighter rounded-full overflow-hidden shadow-inner">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
               initial={{ width: 0 }}
@@ -85,14 +85,14 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
               disabled={isDownloading || isDisabled}
               className={`flex items-center justify-between p-4 glass rounded-xl transition-all duration-300 group cursor-pointer
                 ${isDownloading ? 'ring-2 ring-primary/40 bg-primary/5' : ''}
-                ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-bg-surface-light/50'}
+                ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-primary/5 hover:shadow-md'}
               `}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors
-                  ${isDownloading ? 'bg-primary/20' : 'bg-primary/10 group-hover:bg-primary/20'}`}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm
+                  ${isDownloading ? 'bg-primary text-white' : 'bg-white text-primary group-hover:bg-primary group-hover:text-white'}`}
                 >
-                  <Icon size={20} className="text-primary" />
+                  <Icon size={20} className={isDownloading ? 'text-white' : 'text-primary group-hover:text-white'} />
                 </div>
                 <div className="text-left">
                   <p className={`font-semibold ${getQualityColor(format.quality)}`}>
@@ -108,10 +108,10 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
                 {isDownloading ? (
                   <div className="flex items-center gap-2 text-secondary">
                     <Loader2 size={20} className="animate-spin" />
-                    <span className="text-sm hidden sm:inline">Processing...</span>
+                    <span className="text-sm hidden sm:inline font-medium">Processing...</span>
                   </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:bg-primary group-hover:text-white transition-all duration-300">
                     <Download size={18} className="text-primary group-hover:text-white" />
                   </div>
                 )}

@@ -55,24 +55,26 @@ const InstagramAudio = () => {
     : [];
 
   return (
-    <div className="min-h-screen relative">
-      <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-instagram/5 to-transparent pointer-events-none" />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="blob-pink top-[-100px] left-[-100px]" />
+      <div className="blob-violet bottom-[-100px] right-[-100px]" />
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-instagram/10 rounded-full text-instagram text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-instagram/10 border border-instagram/20 rounded-full text-instagram text-sm font-medium mb-4 shadow-sm">
             <Music size={18} />
             Instagram Audio Extractor
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
             Extract Instagram Audio
           </h1>
-          <p className="text-text-secondary max-w-lg mx-auto">
+          <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Extract and download audio from Instagram Reels and videos as MP3.
           </p>
         </motion.div>
@@ -124,26 +126,26 @@ const InstagramAudio = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   {/* Cover art */}
                   {preview.thumbnail && (
-                    <div className="relative w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl">
+                    <div className="relative w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg border border-primary/10">
                       <img
                         src={preview.thumbnail}
                         alt={preview.title}
                         className="w-full h-full object-cover"
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                          <Music size={20} className="text-white" />
+                      <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-white/60 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md">
+                          <Music size={20} className="text-primary" />
                         </div>
                       </div>
                     </div>
                   )}
                   <div className="text-center sm:text-left">
-                    <h3 className="text-white font-bold text-lg mb-1">
+                    <h3 className="text-text-primary font-bold text-lg mb-1">
                       {preview.title || 'Instagram Audio'}
                     </h3>
                     {preview.uploader && (
-                      <p className="flex items-center justify-center sm:justify-start gap-1 text-text-muted text-sm">
+                      <p className="flex items-center justify-center sm:justify-start gap-1 text-text-secondary font-medium text-sm">
                         <User size={14} />
                         @{preview.uploader}
                       </p>
@@ -176,10 +178,10 @@ const InstagramAudio = () => {
             animate={{ opacity: 1 }}
             className="text-center py-16"
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-instagram/10 flex items-center justify-center">
-              <Music size={36} className="text-instagram/60" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white border border-instagram/10 shadow-lg shadow-instagram/5 flex items-center justify-center">
+              <Music size={36} className="text-instagram/80" />
             </div>
-            <h3 className="text-white/60 text-lg font-medium mb-2">No Audio loaded</h3>
+            <h3 className="text-text-primary text-lg font-bold mb-2">No Audio loaded</h3>
             <p className="text-text-muted text-sm max-w-md mx-auto">
               Paste an Instagram URL above to extract and download its audio.
             </p>

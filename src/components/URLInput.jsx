@@ -87,8 +87,8 @@ const URLInput = ({
       <div
         className={`relative flex items-center gap-3 rounded-2xl p-1.5 transition-all duration-300 ${
           isFocused
-            ? 'glass-strong ring-2 ring-primary/50 shadow-lg shadow-primary/10'
-            : 'glass hover:ring-1 hover:ring-primary/30'
+            ? 'glass-strong ring-2 ring-primary/30 shadow-lg shadow-primary/8'
+            : 'glass hover:ring-1 hover:ring-primary/20'
         }`}
       >
         {/* Platform icon */}
@@ -108,7 +108,7 @@ const URLInput = ({
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           disabled={loading}
-          className="flex-1 bg-transparent text-white placeholder:text-text-muted py-3 px-2 text-base outline-none min-w-0"
+          className="flex-1 bg-transparent text-text-primary placeholder:text-text-muted py-3 px-2 text-base outline-none min-w-0"
           autoComplete="off"
           spellCheck="false"
         />
@@ -122,8 +122,8 @@ const URLInput = ({
               exit={{ opacity: 0, scale: 0.8 }}
               className={`hidden sm:flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold ${
                 platform?.includes('youtube')
-                  ? 'bg-youtube/20 text-youtube'
-                  : 'bg-instagram/20 text-instagram'
+                  ? 'bg-youtube/10 text-youtube'
+                  : 'bg-instagram/10 text-instagram'
               }`}
             >
               <Sparkles size={12} />
@@ -137,7 +137,7 @@ const URLInput = ({
           <button
             type="button"
             onClick={handleClear}
-            className="p-2 text-text-muted hover:text-white transition-colors cursor-pointer"
+            className="p-2 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             aria-label="Clear input"
           >
             <X size={16} />
@@ -148,11 +148,11 @@ const URLInput = ({
         <button
           type="button"
           onClick={handlePasteClick}
-          className="flex items-center gap-1 px-3 py-2 text-sm text-text-secondary hover:text-white transition-colors cursor-pointer"
+          className="flex items-center gap-1 px-3 py-2 text-sm text-text-secondary hover:text-primary transition-colors cursor-pointer"
           title="Paste from clipboard"
         >
           {pasteSuccess ? (
-            <Check size={16} className="text-secondary" />
+            <Check size={16} className="text-success" />
           ) : (
             <Clipboard size={16} />
           )}
@@ -163,7 +163,7 @@ const URLInput = ({
         <motion.button
           type="submit"
           disabled={!value.trim() || loading}
-          className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30"
           whileHover={value.trim() && !loading ? { scale: 1.02 } : {}}
           whileTap={value.trim() && !loading ? { scale: 0.98 } : {}}
         >

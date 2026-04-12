@@ -37,7 +37,7 @@ const PreviewCard = ({ data, isVertical = false }) => {
       {/* Thumbnail */}
       {displayImage && (
         <div
-          className={`relative overflow-hidden bg-bg-surface ${
+          className={`relative overflow-hidden bg-bg-surface-light ${
             isVertical ? 'aspect-[9/16]' : 'aspect-video'
           }`}
         >
@@ -51,14 +51,14 @@ const PreviewCard = ({ data, isVertical = false }) => {
             }}
           />
           {/* Play overlay */}
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <Play size={28} className="text-white ml-1" fill="white" />
+          <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+            <div className="w-16 h-16 bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
+              <Play size={28} className="text-primary ml-1" fill="currentColor" />
             </div>
           </div>
           {/* Duration badge */}
           {duration > 0 && (
-            <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-lg text-xs text-white font-medium">
+            <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-white font-medium">
               <Clock size={12} />
               {formatDuration(duration)}
             </div>
@@ -69,7 +69,7 @@ const PreviewCard = ({ data, isVertical = false }) => {
       {/* Info */}
       <div className="p-5">
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-semibold text-base leading-snug mb-1">
+          <h3 className="text-text-primary font-semibold text-base leading-snug mb-1">
             {truncateText(displayTitle, 100)}
           </h3>
           {displayUser && (
@@ -81,7 +81,7 @@ const PreviewCard = ({ data, isVertical = false }) => {
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5">
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-primary/8">
           {displayViews && (
             <span className="flex items-center gap-1 text-text-muted text-sm">
               <Eye size={14} />

@@ -1,7 +1,6 @@
 'use strict';
 
 const { spawn } = require('child_process');
-const path = require('path');
 const config = require('../config');
 const logger = require('./logger');
 
@@ -19,10 +18,13 @@ function runYtdlp(args, { timeoutMs = 120_000, onStderr } = {}) {
     const ytdlp = config.ytdlp.binary;
     logger.debug(`[yt-dlp] ${ytdlp} ${args.join(' ')}`);
 
+    // Do NOT use shell: true — it breaks arguments that contain spaces
+    // (like --user-agent values). Using the full binary path avoids the
+    // need for shell PATH resolution.
     const proc = spawn(ytdlp, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      // On Windows, shell:true lets PATH resolution work correctly
-      shell: process.platform === 'win32',
+      shell: false,
+      windowsHide: true,
     });
 
     let stdout = '';
@@ -68,10 +70,25 @@ function runYtdlp(args, { timeoutMs = 120_000, onStderr } = {}) {
  * @returns {Promise<object>}
  */
 async function fetchMetadata(url) {
-  const json = await runYtdlp(['-J', '--no-playlist', url], {
-    timeoutMs: 30_000,
+  const args = [
+    '-J',
+    '--no-playlist',
+    '--no-warnings',
+    '--no-check-certificates',
+    '--extractor-args', 'instagram:compatible_formats',
+    url,
+  ];
+
+  const json = await runYtdlp(args, {
+    timeoutMs: 45_000,
   });
-  return JSON.parse(json);
+
+  try {
+    return JSON.parse(json);
+  } catch (parseErr) {
+    logger.error('[yt-dlp] Failed to parse JSON output');
+    throw new Error('Failed to parse media information from the server.');
+  }
 }
 
 /**
@@ -84,23 +101,22 @@ async function fetchMetadata(url) {
  * @param {string}  opts.outPath    output template (yt-dlp -o)
  */
 function buildDownloadArgs({ url, type, formatId, outPath }) {
-  const args = ['--no-playlist'];
+  const args = [
+    '--no-playlist',
+    '--no-warnings',
+    '--no-check-certificates',
+  ];
 
   if (type === 'audio') {
-    // Audio extraction
     args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
   } else if (formatId) {
-    // Explicit format requested by the user
     args.push('-f', formatId);
   } else {
-    // Best video+audio merge, fallback to best single
     args.push('-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best');
   }
 
-  // Embed subtitles / thumbnail are disabled for speed
   args.push(
     '--merge-output-format', 'mp4',
-    '--no-warnings',
     '-o', outPath,
     url
   );

@@ -4,6 +4,7 @@
 require('dotenv').config();
 
 const http = require('http');
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -28,6 +29,8 @@ const app = express();
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    // Relax CSP in dev for hot reload
+    contentSecurityPolicy: config.isDev ? false : undefined,
   })
 );
 
@@ -48,20 +51,53 @@ app.use(
 // ── General rate limiter
 app.use('/api', generalLimiter);
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
+// ─── API Routes ───────────────────────────────────────────────────────────────
 
 app.use('/api/download', downloadRoutes);
 app.use('/api/preview', previewRoutes);
 app.use('/api/health', healthRoutes);
 
-// Root
-app.get('/', (_req, res) => {
+// ── API root info
+app.get('/api', (_req, res) => {
   res.json({
     name: 'Download Market API',
     version: '1.0.0',
-    docs: `${config.baseUrl}/api/health`,
+    status: 'running',
+    endpoints: {
+      preview: 'POST /api/preview',
+      download: 'POST /api/download',
+      downloadStatus: 'GET /api/download/:jobId',
+      health: 'GET /api/health',
+    },
   });
 });
+
+// ─── Serve Frontend (Production Only) ─────────────────────────────────────────
+// If the frontend dist/ folder exists, serve it as static files.
+// This allows single-server deployment (backend + frontend on one host).
+
+const frontendDist = path.join(__dirname, '..', 'dist');
+const fs = require('fs');
+
+if (fs.existsSync(frontendDist)) {
+  logger.info('[Bootstrap] Serving frontend static files from dist/');
+  app.use(express.static(frontendDist));
+
+  // SPA catch-all: any non-API route → serve index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // Root info when no frontend built
+  app.get('/', (_req, res) => {
+    res.json({
+      name: 'Download Market API',
+      version: '1.0.0',
+      docs: `${config.baseUrl}/api/health`,
+    });
+  });
+}
 
 // 404 handler
 app.use((_req, res) => {
@@ -92,6 +128,7 @@ async function bootstrap() {
       `[Bootstrap] Download Market API running on port ${config.port} [${config.nodeEnv}]`
     );
     logger.info(`[Bootstrap] Base URL: ${config.baseUrl}`);
+    logger.info(`[Bootstrap] CORS allowed origins: ${config.allowedOrigins.join(', ')}`);
     logger.info('[Bootstrap] No Redis required — using in-memory storage');
   });
 

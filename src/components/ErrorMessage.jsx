@@ -11,7 +11,7 @@ const ErrorMessage = ({ message, onRetry, onDismiss }) => {
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
       className="w-full max-w-2xl mx-auto"
     >
-      <div className="flex items-start gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/20 text-danger">
+      <div className="flex items-start gap-3 p-4 rounded-2xl bg-danger/5 border border-danger/20 text-danger shadow-sm">
         <AlertTriangle size={20} className="mt-0.5 flex-shrink-0" />
         <div className="flex-1">
           <p className="font-medium text-sm">{message}</p>
@@ -20,7 +20,7 @@ const ErrorMessage = ({ message, onRetry, onDismiss }) => {
           {onRetry && (
             <button
               onClick={onRetry}
-              className="p-1.5 hover:bg-danger/20 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
               title="Retry"
             >
               <RefreshCw size={16} />
@@ -29,7 +29,7 @@ const ErrorMessage = ({ message, onRetry, onDismiss }) => {
           {onDismiss && (
             <button
               onClick={onDismiss}
-              className="p-1.5 hover:bg-danger/20 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
               title="Dismiss"
             >
               <X size={16} />
