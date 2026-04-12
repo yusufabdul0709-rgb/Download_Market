@@ -7,34 +7,36 @@ import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
-import { fetchInstagramReel } from '../../services/instagramService';
-import { isValidInstagramURL } from '../../utils/helpers';
-import useFetchMedia from '../../hooks/useFetchMedia';
-import toast from 'react-hot-toast';
+import useDownloadMedia from '../../hooks/useDownloadMedia';
 
 const InstagramReels = () => {
   const [url, setUrl] = useState('');
-  const { data, loading, error, fetchMedia, reset } = useFetchMedia();
   const location = useLocation();
+  const {
+    preview,
+    previewLoading,
+    previewError,
+    fetchMediaPreview,
+    downloadState,
+    startFormatDownload,
+    resetAll,
+  } = useDownloadMedia();
 
   useEffect(() => {
     if (location.state?.url) {
       setUrl(location.state.url);
-      handleFetch(location.state.url);
+      fetchMediaPreview(location.state.url);
     }
-  }, [location.state]);
+  }, [location.state, fetchMediaPreview]);
 
-  const handleFetch = async (inputUrl) => {
+  const handleFetch = (inputUrl) => {
     const targetUrl = inputUrl || url;
-    if (!targetUrl.trim()) {
-      toast.error('Please enter a URL');
-      return;
-    }
-    if (!isValidInstagramURL(targetUrl)) {
-      toast.error('Please enter a valid Instagram Reel URL');
-      return;
-    }
-    await fetchMedia(fetchInstagramReel, targetUrl);
+    fetchMediaPreview(targetUrl);
+  };
+
+  const handleUrlChange = (newUrl) => {
+    setUrl(newUrl);
+    if (!newUrl.trim()) resetAll();
   };
 
   return (
@@ -69,9 +71,9 @@ const InstagramReels = () => {
         >
           <URLInput
             value={url}
-            onChange={setUrl}
+            onChange={handleUrlChange}
             onSubmit={handleFetch}
-            loading={loading}
+            loading={previewLoading}
             placeholder="Paste Instagram Reel URL here..."
             id="instagram-reels-url-input"
           />
@@ -79,19 +81,19 @@ const InstagramReels = () => {
 
         {/* Error */}
         <AnimatePresence>
-          {error && (
+          {previewError && (
             <div className="mb-6">
               <ErrorMessage
-                message={error}
+                message={previewError}
                 onRetry={() => handleFetch()}
-                onDismiss={reset}
+                onDismiss={resetAll}
               />
             </div>
           )}
         </AnimatePresence>
 
         {/* Loading */}
-        {loading && (
+        {previewLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             <SkeletonLoader type="vertical-card" />
             <SkeletonLoader type="download-options" />
@@ -100,21 +102,26 @@ const InstagramReels = () => {
 
         {/* Results */}
         <AnimatePresence>
-          {data && !loading && (
+          {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start"
             >
-              <PreviewCard data={data} isVertical />
-              <DownloadOptions formats={data.formats} url={url} />
+              <PreviewCard data={preview} isVertical />
+              <DownloadOptions
+                formats={preview.formats}
+                url={url}
+                onDownload={startFormatDownload}
+                downloadState={downloadState}
+              />
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Empty state */}
-        {!data && !loading && !error && (
+        {!preview && !previewLoading && !previewError && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

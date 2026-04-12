@@ -1,61 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Image as ImageIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Image as ImageIcon, Download } from 'lucide-react';
 import URLInput from '../../components/URLInput';
+import PreviewCard from '../../components/PreviewCard';
+import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
-import Button from '../../components/Button';
-import { fetchInstagramPost } from '../../services/instagramService';
-import { isValidInstagramURL } from '../../utils/helpers';
-import useFetchMedia from '../../hooks/useFetchMedia';
-import toast from 'react-hot-toast';
+import useDownloadMedia from '../../hooks/useDownloadMedia';
 
 const InstagramPost = () => {
   const [url, setUrl] = useState('');
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const { data, loading, error, fetchMedia, reset } = useFetchMedia();
   const location = useLocation();
+  const {
+    preview,
+    previewLoading,
+    previewError,
+    fetchMediaPreview,
+    downloadState,
+    startFormatDownload,
+    resetAll,
+  } = useDownloadMedia();
 
   useEffect(() => {
     if (location.state?.url) {
       setUrl(location.state.url);
-      handleFetch(location.state.url);
+      fetchMediaPreview(location.state.url);
     }
-  }, [location.state]);
+  }, [location.state, fetchMediaPreview]);
 
-  const handleFetch = async (inputUrl) => {
+  const handleFetch = (inputUrl) => {
     const targetUrl = inputUrl || url;
-    if (!targetUrl.trim()) {
-      toast.error('Please enter a URL');
-      return;
-    }
-    if (!isValidInstagramURL(targetUrl)) {
-      toast.error('Please enter a valid Instagram Post URL');
-      return;
-    }
-    setCurrentSlide(0);
-    await fetchMedia(fetchInstagramPost, targetUrl);
+    fetchMediaPreview(targetUrl);
   };
 
-  const nextSlide = () => {
-    if (data?.mediaItems) {
-      setCurrentSlide((prev) => (prev + 1) % data.mediaItems.length);
-    }
-  };
-
-  const prevSlide = () => {
-    if (data?.mediaItems) {
-      setCurrentSlide((prev) => (prev - 1 + data.mediaItems.length) % data.mediaItems.length);
-    }
-  };
-
-  const handleDownloadItem = (item) => {
-    toast.success(`Download started: ${item.type === 'video' ? 'Video' : 'Image'} ${item.id}`);
-  };
-
-  const handleDownloadAll = () => {
-    toast.success('Downloading all media items...');
+  const handleUrlChange = (newUrl) => {
+    setUrl(newUrl);
+    if (!newUrl.trim()) resetAll();
   };
 
   return (
@@ -90,9 +71,9 @@ const InstagramPost = () => {
         >
           <URLInput
             value={url}
-            onChange={setUrl}
+            onChange={handleUrlChange}
             onSubmit={handleFetch}
-            loading={loading}
+            loading={previewLoading}
             placeholder="Paste Instagram Post URL here..."
             id="instagram-post-url-input"
           />
@@ -100,175 +81,42 @@ const InstagramPost = () => {
 
         {/* Error */}
         <AnimatePresence>
-          {error && (
+          {previewError && (
             <div className="mb-6">
               <ErrorMessage
-                message={error}
+                message={previewError}
                 onRetry={() => handleFetch()}
-                onDismiss={reset}
+                onDismiss={resetAll}
               />
             </div>
           )}
         </AnimatePresence>
 
         {/* Loading */}
-        {loading && <SkeletonLoader type="card" />}
+        {previewLoading && <SkeletonLoader type="card" />}
 
         {/* Results */}
         <AnimatePresence>
-          {data && !loading && (
+          {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-6"
+              className="space-y-8"
             >
-              {/* Post info */}
-              <div className="glass rounded-2xl p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  {data.userAvatar && (
-                    <img
-                      src={data.userAvatar}
-                      alt={data.username}
-                      className="w-10 h-10 rounded-full border-2 border-bg-surface-light"
-                    />
-                  )}
-                  <div>
-                    <p className="text-white font-semibold">@{data.username}</p>
-                    <p className="text-text-muted text-sm">
-                      {data.type === 'carousel' ? `Carousel • ${data.mediaItems?.length} items` : 'Single Post'}
-                    </p>
-                  </div>
-                </div>
-                {data.caption && (
-                  <p className="text-text-secondary text-sm leading-relaxed">{data.caption}</p>
-                )}
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5">
-                  {data.likes && <span className="text-text-muted text-sm">❤️ {data.likes}</span>}
-                  {data.comments && <span className="text-text-muted text-sm">💬 {data.comments}</span>}
-                </div>
-              </div>
-
-              {/* Carousel */}
-              {data.mediaItems && data.mediaItems.length > 0 && (
-                <div className="glass rounded-2xl overflow-hidden">
-                  {/* Image viewport */}
-                  <div className="relative aspect-square bg-bg-surface">
-                    <AnimatePresence mode="wait">
-                      <motion.img
-                        key={currentSlide}
-                        src={data.mediaItems[currentSlide].url}
-                        alt={`Slide ${currentSlide + 1}`}
-                        className="w-full h-full object-cover"
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </AnimatePresence>
-
-                    {/* Type badge */}
-                    <div className="absolute top-3 right-3 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-white font-medium uppercase">
-                      {data.mediaItems[currentSlide].type}
-                    </div>
-
-                    {/* Navigation arrows */}
-                    {data.mediaItems.length > 1 && (
-                      <>
-                        <button
-                          onClick={prevSlide}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors cursor-pointer"
-                        >
-                          <ChevronLeft size={20} />
-                        </button>
-                        <button
-                          onClick={nextSlide}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors cursor-pointer"
-                        >
-                          <ChevronRight size={20} />
-                        </button>
-                      </>
-                    )}
-
-                    {/* Dots indicator */}
-                    {data.mediaItems.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                        {data.mediaItems.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setCurrentSlide(idx)}
-                            className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                              idx === currentSlide
-                                ? 'bg-white w-5'
-                                : 'bg-white/40 hover:bg-white/60'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Download current + all */}
-                  <div className="p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <Button
-                      variant="primary"
-                      icon={Download}
-                      onClick={() => handleDownloadItem(data.mediaItems[currentSlide])}
-                      className="flex-1"
-                      id="download-current-item"
-                    >
-                      Download This {data.mediaItems[currentSlide].type === 'video' ? 'Video' : 'Image'}
-                    </Button>
-                    {data.mediaItems.length > 1 && (
-                      <Button
-                        variant="secondary"
-                        icon={Download}
-                        onClick={handleDownloadAll}
-                        className="flex-1"
-                        id="download-all-items"
-                      >
-                        Download All ({data.mediaItems.length})
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Thumbnail grid */}
-              {data.mediaItems && data.mediaItems.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {data.mediaItems.map((item, idx) => (
-                    <motion.button
-                      key={item.id}
-                      onClick={() => setCurrentSlide(idx)}
-                      className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all duration-200 ${
-                        idx === currentSlide
-                          ? 'border-primary ring-2 ring-primary/30'
-                          : 'border-transparent hover:border-white/20'
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <img
-                        src={item.thumbnail}
-                        alt={`Thumbnail ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      {item.type === 'video' && (
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">▶</span>
-                        </div>
-                      )}
-                    </motion.button>
-                  ))}
-                </div>
-              )}
+              <PreviewCard data={preview} />
+              <DownloadOptions
+                formats={preview.formats}
+                url={url}
+                onDownload={startFormatDownload}
+                downloadState={downloadState}
+              />
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Empty state */}
-        {!data && !loading && !error && (
+        {!preview && !previewLoading && !previewError && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

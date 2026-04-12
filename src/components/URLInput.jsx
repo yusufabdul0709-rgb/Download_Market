@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link2, Clipboard, Sparkles, X } from 'lucide-react';
+import { Link2, Clipboard, Sparkles, X, Check } from 'lucide-react';
 import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from './BrandIcons';
 import { detectPlatform } from '../utils/helpers';
 
@@ -9,28 +9,53 @@ const URLInput = ({
   onChange,
   onSubmit,
   loading = false,
-  placeholder = 'Paste your URL here...',
+  placeholder = 'Paste your YouTube or Instagram URL here...',
   id = 'url-input',
 }) => {
   const [platform, setPlatform] = useState(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [pasteSuccess, setPasteSuccess] = useState(false);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const detected = detectPlatform(value);
     setPlatform(detected);
   }, [value]);
 
-  // Paste from clipboard
-  const handlePaste = useCallback(async () => {
+  // Auto-detect paste events on the input itself
+  const handleInputPaste = useCallback(
+    (e) => {
+      const text = e.clipboardData?.getData('text');
+      if (text?.trim()) {
+        // Let the default paste happen, then auto-submit after a tick
+        setTimeout(() => {
+          const trimmed = text.trim();
+          if (detectPlatform(trimmed) && onSubmit) {
+            onSubmit(trimmed);
+          }
+        }, 100);
+      }
+    },
+    [onSubmit]
+  );
+
+  // Paste from clipboard button
+  const handlePasteClick = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
-      if (text) {
-        onChange(text);
+      if (text?.trim()) {
+        onChange(text.trim());
+        setPasteSuccess(true);
+        setTimeout(() => setPasteSuccess(false), 1500);
+        // Auto-submit if valid URL
+        if (detectPlatform(text.trim()) && onSubmit) {
+          setTimeout(() => onSubmit(text.trim()), 200);
+        }
       }
     } catch {
-      // Clipboard not available
+      // Clipboard API not available
     }
-  }, [onChange]);
+  }, [onChange, onSubmit]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -41,6 +66,7 @@ const URLInput = ({
 
   const handleClear = () => {
     onChange('');
+    inputRef.current?.focus();
   };
 
   const PlatformIcon = () => {
@@ -72,16 +98,19 @@ const URLInput = ({
 
         {/* Input */}
         <input
+          ref={inputRef}
           id={id}
           type="url"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={handleInputPaste}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           disabled={loading}
           className="flex-1 bg-transparent text-white placeholder:text-text-muted py-3 px-2 text-base outline-none min-w-0"
           autoComplete="off"
+          spellCheck="false"
         />
 
         {/* Platform badge */}
@@ -109,6 +138,7 @@ const URLInput = ({
             type="button"
             onClick={handleClear}
             className="p-2 text-text-muted hover:text-white transition-colors cursor-pointer"
+            aria-label="Clear input"
           >
             <X size={16} />
           </button>
@@ -117,12 +147,16 @@ const URLInput = ({
         {/* Paste button */}
         <button
           type="button"
-          onClick={handlePaste}
+          onClick={handlePasteClick}
           className="flex items-center gap-1 px-3 py-2 text-sm text-text-secondary hover:text-white transition-colors cursor-pointer"
           title="Paste from clipboard"
         >
-          <Clipboard size={16} />
-          <span className="hidden sm:inline">Paste</span>
+          {pasteSuccess ? (
+            <Check size={16} className="text-secondary" />
+          ) : (
+            <Clipboard size={16} />
+          )}
+          <span className="hidden sm:inline">{pasteSuccess ? 'Pasted!' : 'Paste'}</span>
         </button>
 
         {/* Submit button */}
@@ -130,8 +164,8 @@ const URLInput = ({
           type="submit"
           disabled={!value.trim() || loading}
           className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          whileHover={value.trim() ? { scale: 1.02 } : {}}
-          whileTap={value.trim() ? { scale: 0.98 } : {}}
+          whileHover={value.trim() && !loading ? { scale: 1.02 } : {}}
+          whileTap={value.trim() && !loading ? { scale: 0.98 } : {}}
         >
           {loading ? (
             <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">

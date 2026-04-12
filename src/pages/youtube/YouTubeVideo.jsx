@@ -1,43 +1,47 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, AlertCircle } from 'lucide-react';
+import { Video } from 'lucide-react';
 import { YoutubeIcon as Youtube } from '../../components/BrandIcons';
 import URLInput from '../../components/URLInput';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
-import Loader from '../../components/Loader';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
-import { fetchYouTubeVideo } from '../../services/youtubeService';
-import { isValidYouTubeURL } from '../../utils/helpers';
-import useFetchMedia from '../../hooks/useFetchMedia';
-import toast from 'react-hot-toast';
+import useDownloadMedia from '../../hooks/useDownloadMedia';
 
 const YouTubeVideo = () => {
   const [url, setUrl] = useState('');
-  const { data, loading, error, fetchMedia, reset } = useFetchMedia();
   const location = useLocation();
+  const {
+    preview,
+    previewLoading,
+    previewError,
+    fetchMediaPreview,
+    downloadState,
+    startFormatDownload,
+    resetAll,
+  } = useDownloadMedia();
 
   // Handle URL passed from landing page
   useEffect(() => {
     if (location.state?.url) {
       setUrl(location.state.url);
-      handleFetch(location.state.url);
+      fetchMediaPreview(location.state.url);
     }
-  }, [location.state]);
+  }, [location.state, fetchMediaPreview]);
 
-  const handleFetch = async (inputUrl) => {
+  const handleFetch = (inputUrl) => {
     const targetUrl = inputUrl || url;
-    if (!targetUrl.trim()) {
-      toast.error('Please enter a URL');
-      return;
+    fetchMediaPreview(targetUrl);
+  };
+
+  const handleUrlChange = (newUrl) => {
+    setUrl(newUrl);
+    // Reset results when URL changes
+    if (!newUrl.trim()) {
+      resetAll();
     }
-    if (!isValidYouTubeURL(targetUrl)) {
-      toast.error('Please enter a valid YouTube video URL');
-      return;
-    }
-    await fetchMedia(fetchYouTubeVideo, targetUrl);
   };
 
   return (
@@ -73,9 +77,9 @@ const YouTubeVideo = () => {
         >
           <URLInput
             value={url}
-            onChange={setUrl}
+            onChange={handleUrlChange}
             onSubmit={handleFetch}
-            loading={loading}
+            loading={previewLoading}
             placeholder="Paste YouTube video URL here..."
             id="youtube-video-url-input"
           />
@@ -83,19 +87,19 @@ const YouTubeVideo = () => {
 
         {/* Error */}
         <AnimatePresence>
-          {error && (
+          {previewError && (
             <div className="mb-6">
               <ErrorMessage
-                message={error}
+                message={previewError}
                 onRetry={() => handleFetch()}
-                onDismiss={reset}
+                onDismiss={resetAll}
               />
             </div>
           )}
         </AnimatePresence>
 
         {/* Loading */}
-        {loading && (
+        {previewLoading && (
           <div className="space-y-6">
             <SkeletonLoader type="card" />
             <SkeletonLoader type="download-options" />
@@ -104,21 +108,26 @@ const YouTubeVideo = () => {
 
         {/* Results */}
         <AnimatePresence>
-          {data && !loading && (
+          {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="space-y-8"
             >
-              <PreviewCard data={data} />
-              <DownloadOptions formats={data.formats} url={url} />
+              <PreviewCard data={preview} />
+              <DownloadOptions
+                formats={preview.formats}
+                url={url}
+                onDownload={startFormatDownload}
+                downloadState={downloadState}
+              />
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Empty state */}
-        {!data && !loading && !error && (
+        {!preview && !previewLoading && !previewError && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

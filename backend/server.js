@@ -17,8 +17,6 @@ const downloadRoutes = require('./routes/download');
 const previewRoutes = require('./routes/preview');
 const healthRoutes = require('./routes/health');
 
-const { getClient } = require('./config/redis');
-const { getDownloadQueue } = require('./queues/downloadQueue');
 const { startCleanupScheduler, ensureTempDir } = require('./services/cleanupService');
 const logger = require('./utils/logger');
 
@@ -29,7 +27,7 @@ const app = express();
 // ── Security headers
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow CDN / direct file serving
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
@@ -83,25 +81,10 @@ async function bootstrap() {
   // 1. Ensure temp directory exists
   ensureTempDir();
 
-  // 2. Verify Redis is reachable
-  try {
-    const redis = getClient();
-    await redis.ping();
-    logger.info('[Bootstrap] Redis connection verified');
-  } catch (err) {
-    logger.error('[Bootstrap] Cannot reach Redis — aborting', {
-      error: err.message,
-    });
-    process.exit(1);
-  }
-
-  // 3. Warm up the queue (creates it in Redis if it doesn't exist yet)
-  getDownloadQueue();
-
-  // 4. Start the cleanup cron job
+  // 2. Start the cleanup cron job
   startCleanupScheduler();
 
-  // 5. Start HTTP server
+  // 3. Start HTTP server
   const server = http.createServer(app);
 
   server.listen(config.port, () => {
@@ -109,22 +92,14 @@ async function bootstrap() {
       `[Bootstrap] Download Market API running on port ${config.port} [${config.nodeEnv}]`
     );
     logger.info(`[Bootstrap] Base URL: ${config.baseUrl}`);
+    logger.info('[Bootstrap] No Redis required — using in-memory storage');
   });
 
   // ── Graceful shutdown ──────────────────────────────────────────────────────
   const shutdown = async (signal) => {
     logger.info(`[Shutdown] ${signal} received — closing server…`);
-
-    server.close(async () => {
-      logger.info('[Shutdown] HTTP server closed');
-
-      const { closeQueue } = require('./queues/downloadQueue');
-      const { closeClient } = require('./config/redis');
-
-      await closeQueue();
-      await closeClient();
-
-      logger.info('[Shutdown] All connections closed — bye!');
+    server.close(() => {
+      logger.info('[Shutdown] HTTP server closed — bye!');
       process.exit(0);
     });
 
@@ -154,4 +129,4 @@ async function bootstrap() {
 
 bootstrap();
 
-module.exports = app; // exported for testing / integration
+module.exports = app;
