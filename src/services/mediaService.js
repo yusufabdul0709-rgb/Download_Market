@@ -62,43 +62,26 @@ export const checkDownloadStatus = async (jobId) => {
  * @param {string} filename - Suggested filename
  */
 export const triggerBrowserDownload = (downloadUrl, filename) => {
-  // Resolve the full URL for comparison
+  // Resolve the full URL
   const apiBase = import.meta.env.VITE_API_BASE_URL || '';
   let fullUrl = downloadUrl;
 
-  // If the downloadUrl is a relative path (starts with /), prefix it with the API base
   if (downloadUrl.startsWith('/') && apiBase) {
     fullUrl = `${apiBase}${downloadUrl}`;
   } else if (downloadUrl.startsWith('/')) {
-    // In dev mode with proxy, relative URLs work as-is
     fullUrl = downloadUrl;
   }
 
+  // Use a direct DOM anchor click. 
+  // We avoid target="_blank" as modern pop-up blockers intercept it when triggered from within an async polling interval.
+  // Since the backend returns Content-Disposition: attachment, it safely downloads without leaving the page.
   const link = document.createElement('a');
   link.href = fullUrl;
-  link.download = filename || 'download';
-  link.style.display = 'none';
-
-  // For same-origin, download attribute works.
-  // For cross-origin, set target=_blank as a fallback.
-  const isSameOrigin =
-    fullUrl.startsWith('/') ||
-    fullUrl.startsWith(window.location.origin);
-
-  if (isSameOrigin) {
-    link.target = '_self';
-  } else {
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-  }
-
+  link.setAttribute('download', filename || 'download');
   document.body.appendChild(link);
+  
   link.click();
-
-  // Cleanup after a short delay
-  setTimeout(() => {
-    if (link.parentNode) {
-      document.body.removeChild(link);
-    }
-  }, 1500);
+  
+  // Clean up instantly
+  document.body.removeChild(link);
 };

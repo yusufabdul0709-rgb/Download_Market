@@ -110,9 +110,12 @@ function buildDownloadArgs({ url, type, formatId, outPath }) {
   if (type === 'audio') {
     args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
   } else if (formatId) {
-    args.push('-f', formatId);
+    // A specific format ID was requested. Still prefer an mp4 container.
+    args.push('-f', `${formatId}+bestaudio[ext=m4a]/${formatId}`);
   } else {
-    args.push('-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best');
+    // If no explicit format ID, download the best pre-merged mp4 or webm. 
+    // b[ext=mp4] ensures we get a format that mobile galleries can easily play.
+    args.push('-f', 'b[ext=mp4]/b');
   }
 
   args.push(
