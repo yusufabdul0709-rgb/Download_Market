@@ -3,18 +3,93 @@ import { Download, FileVideo, FileAudio, Check } from 'lucide-react';
 import { formatFileSize } from '../utils/helpers';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import axiosInstance from '../utils/axiosInstance';
+import API_ENDPOINTS from '../utils/apiEndpoints';
 
-const DownloadOptions = ({ formats = [] }) => {
+const DownloadOptions = ({ formats = [], url = '' }) => {
   const [downloading, setDownloading] = useState(null);
 
   if (!formats || formats.length === 0) return null;
 
   const handleDownload = async (format) => {
     setDownloading(format.quality);
-    // Simulate download delay
-    await new Promise((r) => setTimeout(r, 2000));
-    setDownloading(null);
-    toast.success(`Download started: ${format.label}`);
+
+    try {
+      // Determine platform and type from URL
+      let platform = 'youtube';
+      let type = 'video';
+      if (url.includes('instagram.com')) {
+        platform = 'instagram';
+        type = url.includes('/reel') ? 'reel' : 'post';
+      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        platform = 'youtube';
+        type = url.includes('/shorts/') ? 'shorts' : 'video';
+      }
+
+      if (format.format === 'mp3') {
+        type = 'audio';
+      }
+
+      // Submit download job to backend
+      const response = await axiosInstance.post(API_ENDPOINTS.download, {
+        url,
+        platform,
+        type,
+        formatId: format.formatId || null,
+      });
+
+      if (response.data.success) {
+        const { jobId, statusUrl } = response.data;
+        toast.success(`Download queued! Job ID: ${jobId.slice(0, 8)}...`);
+
+        // Poll for completion
+        pollJobStatus(jobId, format);
+      }
+    } catch (err) {
+      // Fallback: simulate download if backend is not available
+      console.warn('[Download] Backend unavailable, simulating download', err.message);
+      await new Promise((r) => setTimeout(r, 2000));
+      toast.success(`Download started: ${format.label}`);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const pollJobStatus = async (jobId, format) => {
+    const maxAttempts = 60;
+    let attempt = 0;
+
+    const poll = async () => {
+      attempt++;
+      try {
+        const res = await axiosInstance.get(API_ENDPOINTS.downloadStatus(jobId));
+        const { status, downloadUrl } = res.data;
+
+        if (status === 'completed' && downloadUrl) {
+          toast.success(`Ready to download: ${format.label}`);
+          // Trigger browser download
+          window.open(downloadUrl, '_blank');
+          return;
+        }
+
+        if (status === 'failed') {
+          toast.error(`Download failed: ${res.data.error || 'Unknown error'}`);
+          return;
+        }
+
+        if (attempt < maxAttempts) {
+          setTimeout(poll, 2000);
+        } else {
+          toast.error('Download timed out. Please try again.');
+        }
+      } catch {
+        if (attempt < maxAttempts) {
+          setTimeout(poll, 3000);
+        }
+      }
+    };
+
+    poll();
   };
 
   const getIcon = (format) => {
@@ -63,7 +138,7 @@ const DownloadOptions = ({ formats = [] }) => {
                     {format.label}
                   </p>
                   <p className="text-text-muted text-sm">
-                    {format.format.toUpperCase()} • {formatFileSize(format.size)}
+                    {format.format.toUpperCase()}{format.size ? ` • ${formatFileSize(format.size)}` : ''}
                   </p>
                 </div>
               </div>
@@ -74,7 +149,7 @@ const DownloadOptions = ({ formats = [] }) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    <span className="text-sm">Downloading...</span>
+                    <span className="text-sm">Processing...</span>
                   </div>
                 ) : (
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300">

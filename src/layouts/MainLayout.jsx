@@ -27,7 +27,7 @@ const MainLayout = () => {
         }}
       />
       <Navbar />
-      <main className="flex-1 pt-16 lg:pt-18">
+      <main className="flex-1 pt-20">
         <Outlet />
       </main>
       <Footer />

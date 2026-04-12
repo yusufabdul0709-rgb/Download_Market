@@ -1,15 +1,10 @@
-// Mock API endpoints configuration
-// Replace these with real backend endpoints when ready
+// API endpoints configuration — matches backend routes
 const API_ENDPOINTS = {
-  youtube: {
-    video: '/youtube/video',
-    shorts: '/youtube/shorts',
-  },
-  instagram: {
-    reels: '/instagram/reels',
-    post: '/instagram/post',
-    audio: '/instagram/audio',
-  },
+  preview: '/api/preview',
+  download: '/api/download',
+  downloadStatus: (jobId) => `/api/download/${jobId}`,
+  downloadFile: (jobId, filename) => `/api/download/file/${jobId}/${filename}`,
+  health: '/api/health',
 };
 
 export default API_ENDPOINTS;

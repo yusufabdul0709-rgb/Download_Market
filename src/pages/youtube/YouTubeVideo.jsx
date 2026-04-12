@@ -112,7 +112,7 @@ const YouTubeVideo = () => {
               className="space-y-8"
             >
               <PreviewCard data={data} />
-              <DownloadOptions formats={data.formats} />
+              <DownloadOptions formats={data.formats} url={url} />
             </motion.div>
           )}
         </AnimatePresence>

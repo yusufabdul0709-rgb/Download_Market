@@ -1,21 +1,16 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
-  timeout: 30000,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor — ready for JWT auth
+// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Log outgoing requests in development
     if (import.meta.env.DEV) {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data || '');
     }
@@ -35,15 +30,9 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    const message = error.response?.data?.message || error.message || 'Something went wrong';
+    const message = error.response?.data?.error || error.response?.data?.message || error.message || 'Something went wrong';
     if (import.meta.env.DEV) {
       console.error(`[API Error] ${error.response?.status || 'Network Error'}`, message);
-    }
-
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      // Could redirect to login here
     }
 
     return Promise.reject({

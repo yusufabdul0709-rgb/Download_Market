@@ -264,7 +264,7 @@ const InstagramAudio = () => {
               </div>
 
               {/* Download Options */}
-              <DownloadOptions formats={data.formats} />
+              <DownloadOptions formats={data.formats} url={url} />
             </motion.div>
           )}
         </AnimatePresence>

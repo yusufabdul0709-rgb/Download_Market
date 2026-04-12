@@ -109,7 +109,7 @@ const YouTubeShorts = () => {
               className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start"
             >
               <PreviewCard data={data} isVertical />
-              <DownloadOptions formats={data.formats} />
+              <DownloadOptions formats={data.formats} url={url} />
             </motion.div>
           )}
         </AnimatePresence>
