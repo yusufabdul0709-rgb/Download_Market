@@ -3,27 +3,153 @@
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
-const { getDownloadQueue } = require('../queues/downloadQueue');
 const { createJob, getJob, updateJob } = require('../services/jobStore');
-const { deleteFile } = require('../services/cleanupService');
+const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
+const { buildDownloadArgs, parseProgress, fetchMetadata } = require('../utils/ytdlp');
 const { asyncHandler, AppError } = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 const config = require('../config');
 
-// ── Submit Download Job ───────────────────────────────────────────────────────
+const TEMP_DIR = path.resolve(config.tempDir);
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
- * POST /api/download
- *
- * Accepts a URL, platform and type, creates a Redis job record and enqueues
- * a BullMQ job for background processing.
+ * Find output file produced by yt-dlp (extension may change after merge).
  */
+function findOutputFile(expectedBase) {
+  const dir = path.dirname(expectedBase);
+  const baseName = path.basename(expectedBase);
+  try {
+    const files = fs.readdirSync(dir);
+    const match = files.find((f) => f.startsWith(baseName));
+    return match ? path.join(dir, match) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Run yt-dlp download with live progress. No BullMQ — runs in-process.
+ */
+function runDownload(args, jobId, timeoutMs = 300_000) {
+  return new Promise((resolve, reject) => {
+    const ytdlpBin = config.ytdlp.binary;
+
+    const proc = spawn(ytdlpBin, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: process.platform === 'win32',
+    });
+
+    const timer = setTimeout(() => {
+      proc.kill('SIGKILL');
+      reject(new Error('yt-dlp download timed out'));
+    }, timeoutMs);
+
+    proc.stdout.setEncoding('utf8');
+    proc.stderr.setEncoding('utf8');
+
+    let stderrBuf = '';
+
+    const handleLine = (line) => {
+      const pct = parseProgress(line);
+      if (pct !== null) {
+        updateJob(jobId, { progress: pct });
+      }
+    };
+
+    proc.stdout.on('data', (chunk) => chunk.split('\n').forEach(handleLine));
+    proc.stderr.on('data', (chunk) => {
+      stderrBuf += chunk;
+      chunk.split('\n').forEach(handleLine);
+    });
+
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve();
+      else reject(new Error(`yt-dlp exited ${code}: ${stderrBuf.slice(-400).trim()}`));
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      reject(new Error(`Failed to spawn yt-dlp: ${err.message}`));
+    });
+  });
+}
+
+/**
+ * Process a download job in-process (no worker/queue).
+ */
+async function processJob(jobId) {
+  const job = getJob(jobId);
+  if (!job) return;
+
+  const { url, type } = job;
+
+  try {
+    updateJob(jobId, { status: 'processing', progress: 0 });
+    ensureTempDir();
+
+    // Check duration
+    let metadata;
+    try {
+      metadata = await fetchMetadata(url);
+    } catch (err) {
+      throw new Error(`Metadata fetch failed: ${err.message}`);
+    }
+
+    const maxDur = config.ytdlp.maxDurationSeconds;
+    if (maxDur > 0 && metadata.duration && metadata.duration > maxDur) {
+      throw new Error(
+        `Video duration (${Math.ceil(metadata.duration / 60)} min) exceeds the limit of ${maxDur / 60} min.`
+      );
+    }
+
+    // Build args
+    const formatId = job.formatId || null;
+    const outBase = path.join(TEMP_DIR, jobId);
+    const outTemplate = `${outBase}.%(ext)s`;
+    const args = buildDownloadArgs({ url, type, formatId, outPath: outTemplate });
+
+    updateJob(jobId, { progress: 5 });
+    await runDownload(args, jobId);
+
+    // Find file
+    const outputFile = findOutputFile(outBase);
+    if (!outputFile || !fs.existsSync(outputFile)) {
+      throw new Error('Output file not found after download.');
+    }
+
+    const fileName = path.basename(outputFile);
+    const downloadUrl = `${config.baseUrl}/api/download/file/${jobId}/${encodeURIComponent(fileName)}`;
+
+    updateJob(jobId, {
+      status: 'completed',
+      progress: 100,
+      filePath: outputFile,
+      downloadUrl,
+      filename: fileName,
+    });
+
+    logger.info(`[Download] Job ${jobId} completed → ${outputFile}`);
+  } catch (err) {
+    logger.error(`[Download] Job ${jobId} failed: ${err.message}`);
+    updateJob(jobId, {
+      status: 'failed',
+      error: err.message,
+    });
+  }
+}
+
+// ── Submit Download Job ───────────────────────────────────────────────────────
+
 const submitDownload = asyncHandler(async (req, res) => {
   const { url, platform, type, formatId } = req.body;
 
-  // ── Validation ──────────────────────────────────────────────────────────
+  // Validation
   const urlCheck = validateUrl(url);
   if (!urlCheck.valid) throw new AppError(urlCheck.error, 400, 'INVALID_URL');
 
@@ -33,7 +159,6 @@ const submitDownload = asyncHandler(async (req, res) => {
   const typeCheck = validateMediaType(type);
   if (!typeCheck.valid) throw new AppError(typeCheck.error, 400, 'INVALID_TYPE');
 
-  // Verify the URL domain matches the declared platform
   const detectedPlatform = urlCheck.platform;
   if (detectedPlatform !== platform) {
     throw new AppError(
@@ -43,42 +168,33 @@ const submitDownload = asyncHandler(async (req, res) => {
     );
   }
 
-  // ── Create job ──────────────────────────────────────────────────────────
+  // Create job
   const jobId = uuidv4();
-
-  await createJob(jobId, {
+  const jobRecord = createJob(jobId, {
     url: urlCheck.url.href,
     platform,
     type,
   });
 
-  // ── Enqueue ─────────────────────────────────────────────────────────────
-  const queue = getDownloadQueue();
-  await queue.add(
-    'download',
-    { jobId, url: urlCheck.url.href, platform, type, formatId: formatId || null },
-    { jobId } // Use our own ID as BullMQ's job name for traceability
-  );
+  // Store formatId on the job for processJob to use
+  jobRecord.formatId = formatId || null;
 
-  logger.info(`[Controller] Queued job ${jobId} — ${platform}/${type}`);
+  // Start processing in background (non-blocking)
+  processJob(jobId).catch(() => {});
+
+  logger.info(`[Controller] Started job ${jobId} — ${platform}/${type}`);
 
   res.status(202).json({
     success: true,
     jobId,
     status: 'queued',
-    message: 'Your download has been queued. Poll the status endpoint for updates.',
+    message: 'Your download has been started. Poll the status endpoint for updates.',
     statusUrl: `${config.baseUrl}/api/download/${jobId}`,
   });
 });
 
 // ── Get Job Status ────────────────────────────────────────────────────────────
 
-/**
- * GET /api/download/:jobId
- *
- * Returns the current status (queued | processing | completed | failed)
- * along with progress and the download URL once complete.
- */
 const getJobStatus = asyncHandler(async (req, res) => {
   const { jobId } = req.params;
 
@@ -86,7 +202,7 @@ const getJobStatus = asyncHandler(async (req, res) => {
     throw new AppError('Invalid job ID.', 400, 'INVALID_JOB_ID');
   }
 
-  const record = await getJob(jobId);
+  const record = getJob(jobId);
   if (!record) {
     throw new AppError('Job not found. It may have expired.', 404, 'JOB_NOT_FOUND');
   }
@@ -104,6 +220,7 @@ const getJobStatus = asyncHandler(async (req, res) => {
 
   if (record.status === 'completed') {
     response.downloadUrl = record.downloadUrl;
+    response.filename = record.filename;
   }
 
   if (record.status === 'failed') {
@@ -115,31 +232,18 @@ const getJobStatus = asyncHandler(async (req, res) => {
 
 // ── Serve Downloaded File ─────────────────────────────────────────────────────
 
-/**
- * GET /api/download/file/:jobId/:filename
- *
- * Streams the completed file back to the client.
- * Deletes the file from disk immediately after the stream finishes.
- */
 const serveFile = asyncHandler(async (req, res) => {
   const { jobId, filename } = req.params;
 
-  const record = await getJob(jobId);
+  const record = getJob(jobId);
   if (!record || record.status !== 'completed') {
     throw new AppError('File not ready or job not found.', 404, 'FILE_NOT_READY');
   }
 
-  // Safety: ensure filename doesn't escape temp dir
   const safeFilename = path.basename(decodeURIComponent(filename));
-  const expectedPath = path.resolve(config.tempDir, safeFilename);
   const filePath = record.filePath;
 
-  // Validate the filePath stored in Redis matches what is requested
-  if (!filePath || path.resolve(filePath) !== expectedPath) {
-    throw new AppError('File path mismatch.', 403, 'FORBIDDEN');
-  }
-
-  if (!fs.existsSync(filePath)) {
+  if (!filePath || !fs.existsSync(filePath)) {
     throw new AppError('File has already been deleted or expired.', 410, 'FILE_GONE');
   }
 
@@ -167,10 +271,7 @@ const serveFile = asyncHandler(async (req, res) => {
   });
 
   readStream.on('end', async () => {
-    logger.info(`[Controller] File served for job ${jobId} — scheduling deletion`);
-    // Mark job as no longer available and delete the file
-    await updateJob(jobId, { status: 'downloaded', downloadUrl: null });
-    await deleteFile(filePath);
+    logger.info(`[Controller] File served for job ${jobId}`);
   });
 
   readStream.pipe(res);

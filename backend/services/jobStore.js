@@ -1,38 +1,23 @@
 'use strict';
 
-const { getClient } = require('../config/redis');
-const config = require('../config');
 const logger = require('../utils/logger');
 
-/** Redis key prefix for job metadata */
-const KEY_PREFIX = 'job:';
+/** In-memory job store — no Redis needed */
+const _jobs = new Map();
+
+/** Auto-expire jobs after TTL */
+const config = require('../config');
 
 /**
- * @typedef {object} JobRecord
- * @property {string} jobId
- * @property {string} url
- * @property {string} platform
- * @property {string} type
- * @property {'queued'|'processing'|'completed'|'failed'} status
- * @property {number} progress    0–100
- * @property {string|null} filePath
- * @property {string|null} downloadUrl
- * @property {string|null} error
- * @property {number} createdAt   Unix timestamp (ms)
- * @property {number} expiresAt   Unix timestamp (ms)
- */
-
-/**
- * Create an initial job record in Redis.
+ * Create an initial job record.
  * @param {string} jobId
  * @param {object} data  { url, platform, type }
- * @returns {Promise<JobRecord>}
+ * @returns {object} JobRecord
  */
-async function createJob(jobId, { url, platform, type }) {
-  const ttl = config.redis.jobTTL;
+function createJob(jobId, { url, platform, type }) {
+  const ttl = config.fileTTLSeconds;
   const now = Date.now();
 
-  /** @type {JobRecord} */
   const record = {
     jobId,
     url,
@@ -42,18 +27,19 @@ async function createJob(jobId, { url, platform, type }) {
     progress: 0,
     filePath: null,
     downloadUrl: null,
+    filename: null,
     error: null,
     createdAt: now,
     expiresAt: now + ttl * 1000,
   };
 
-  const redis = getClient();
-  await redis.set(
-    `${KEY_PREFIX}${jobId}`,
-    JSON.stringify(record),
-    'EX',
-    ttl
-  );
+  _jobs.set(jobId, record);
+
+  // Auto-delete after TTL
+  setTimeout(() => {
+    _jobs.delete(jobId);
+    logger.debug(`[JobStore] Expired job ${jobId}`);
+  }, ttl * 1000);
 
   logger.debug(`[JobStore] Created job ${jobId}`);
   return record;
@@ -62,47 +48,35 @@ async function createJob(jobId, { url, platform, type }) {
 /**
  * Retrieve a job record by ID.
  * @param {string} jobId
- * @returns {Promise<JobRecord|null>}
+ * @returns {object|null}
  */
-async function getJob(jobId) {
-  const redis = getClient();
-  const raw = await redis.get(`${KEY_PREFIX}${jobId}`);
-  if (!raw) return null;
-  return JSON.parse(raw);
+function getJob(jobId) {
+  return _jobs.get(jobId) || null;
 }
 
 /**
- * Partially update a job record. Refreshes the TTL on every write.
+ * Partially update a job record.
  * @param {string} jobId
- * @param {Partial<JobRecord>} updates
+ * @param {object} updates
  */
-async function updateJob(jobId, updates) {
-  const redis = getClient();
-  const existing = await getJob(jobId);
+function updateJob(jobId, updates) {
+  const existing = _jobs.get(jobId);
   if (!existing) {
     logger.warn(`[JobStore] updateJob called for unknown jobId ${jobId}`);
     return;
   }
 
   const merged = { ...existing, ...updates };
-  const ttl = config.redis.jobTTL;
-  await redis.set(
-    `${KEY_PREFIX}${jobId}`,
-    JSON.stringify(merged),
-    'EX',
-    ttl
-  );
-
-  logger.debug(`[JobStore] Updated job ${jobId} → ${JSON.stringify(updates)}`);
+  _jobs.set(jobId, merged);
+  logger.debug(`[JobStore] Updated job ${jobId} → status=${merged.status}`);
 }
 
 /**
- * Delete a job record explicitly (e.g. after file is served).
+ * Delete a job record.
  * @param {string} jobId
  */
-async function deleteJob(jobId) {
-  const redis = getClient();
-  await redis.del(`${KEY_PREFIX}${jobId}`);
+function deleteJob(jobId) {
+  _jobs.delete(jobId);
   logger.debug(`[JobStore] Deleted job ${jobId}`);
 }
 

@@ -23,6 +23,13 @@ export const isValidInstagramURL = (url) => {
 };
 
 /**
+ * Validates any supported URL (YouTube or Instagram)
+ */
+export const isValidURL = (url) => {
+  return isValidYouTubeURL(url) || isValidInstagramURL(url);
+};
+
+/**
  * Auto-detect platform from URL
  */
 export const detectPlatform = (url) => {
@@ -41,10 +48,28 @@ export const detectPlatform = (url) => {
 };
 
 /**
+ * Get platform display info
+ */
+export const getPlatformInfo = (url) => {
+  const platform = detectPlatform(url);
+  if (!platform) return { name: 'Unknown', type: 'video' };
+
+  const map = {
+    youtube: { name: 'YouTube', type: 'video', platform: 'youtube' },
+    'youtube-shorts': { name: 'YouTube Shorts', type: 'shorts', platform: 'youtube' },
+    'instagram-reels': { name: 'Instagram Reels', type: 'reel', platform: 'instagram' },
+    'instagram-post': { name: 'Instagram Post', type: 'post', platform: 'instagram' },
+    instagram: { name: 'Instagram', type: 'reel', platform: 'instagram' },
+  };
+
+  return map[platform] || { name: 'Unknown', type: 'video', platform: 'unknown' };
+};
+
+/**
  * Format file size
  */
 export const formatFileSize = (bytes) => {
-  if (!bytes) return '0 B';
+  if (!bytes) return '';
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
@@ -55,8 +80,12 @@ export const formatFileSize = (bytes) => {
  */
 export const formatDuration = (seconds) => {
   if (!seconds) return '0:00';
-  const mins = Math.floor(seconds / 60);
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
+  if (hrs > 0) {
+    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
@@ -69,8 +98,14 @@ export const truncateText = (text, maxLength = 60) => {
 };
 
 /**
- * Generate a unique ID
+ * Debounce utility
  */
-export const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+export const debounce = (fn, delay) => {
+  let timeoutId;
+  const debounced = (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+  debounced.cancel = () => clearTimeout(timeoutId);
+  return debounced;
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -31,8 +31,8 @@ const features = [
   },
   {
     icon: Shield,
-    title: 'Safe & Secure',
-    description: 'No ads, no malware. Your privacy is our top priority.',
+    title: 'Safe & Private',
+    description: 'No tracking, no ads, no history stored. Your privacy comes first.',
     color: 'text-emerald-400',
     bg: 'bg-emerald-400/10',
   },
@@ -108,13 +108,7 @@ const stats = [
 
 const LandingPage = () => {
   const [url, setUrl] = useState('');
-  const [recentDownloads, setRecentDownloads] = useState([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const recent = JSON.parse(localStorage.getItem('recentDownloads') || '[]');
-    setRecentDownloads(recent.slice(0, 5));
-  }, []);
 
   const handleSubmit = (inputUrl) => {
     const platform = detectPlatform(inputUrl);
@@ -129,6 +123,7 @@ const LandingPage = () => {
     } else if (platform?.includes('instagram')) {
       navigate('/instagram/reels', { state: { url: inputUrl } });
     } else {
+      // Default to YouTube video
       navigate('/youtube/video', { state: { url: inputUrl } });
     }
   };
@@ -323,47 +318,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
-      {/* Recent Downloads */}
-      {recentDownloads.length > 0 && (
-        <section className="relative py-16 px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <Clock size={22} className="text-primary" />
-                Recent Downloads
-              </h2>
-              <div className="grid gap-3">
-                {recentDownloads.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4 p-4 glass rounded-xl"
-                  >
-                    {item.thumbnail && (
-                      <img
-                        src={item.thumbnail}
-                        alt=""
-                        className="w-14 h-10 object-cover rounded-lg flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{item.title}</p>
-                      <p className="text-text-muted text-xs truncate">{item.url}</p>
-                    </div>
-                    <span className="text-text-muted text-xs flex-shrink-0">
-                      {new Date(item.timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </section>
-      )}
 
       {/* Bottom CTA */}
       <section className="relative py-20 px-4 sm:px-6">
