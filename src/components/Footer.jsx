@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Download, Youtube, Instagram, Github, Mail, Heart } from 'lucide-react';
+import { Download, Code, Mail, Heart } from 'lucide-react';
+import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from './BrandIcons';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -81,7 +82,7 @@ const Footer = () => {
               </li>
               <li>
                 <a href="#" className="text-text-muted text-sm hover:text-white transition-colors flex items-center gap-2">
-                  <Github size={14} />
+                  <Code size={14} />
                   GitHub
                 </a>
               </li>

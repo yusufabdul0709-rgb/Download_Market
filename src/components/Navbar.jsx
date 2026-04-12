@@ -3,8 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
-  Youtube,
-  Instagram,
   Moon,
   Sun,
   Menu,
@@ -16,6 +14,7 @@ import {
   Music,
   Film,
 } from 'lucide-react';
+import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from './BrandIcons';
 
 const navLinks = [
   {

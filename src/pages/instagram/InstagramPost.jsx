@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Instagram, Image as ImageIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Image as ImageIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';

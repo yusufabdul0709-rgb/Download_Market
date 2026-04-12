@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Youtube,
-  Instagram,
   Download,
   Zap,
   Shield,
@@ -19,6 +17,7 @@ import {
   TrendingUp,
   ChevronRight,
 } from 'lucide-react';
+import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from '../components/BrandIcons';
 import URLInput from '../components/URLInput';
 import { detectPlatform } from '../utils/helpers';
 

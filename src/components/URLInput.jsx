@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link2, Clipboard, Sparkles, Youtube, Instagram, X } from 'lucide-react';
+import { Link2, Clipboard, Sparkles, X } from 'lucide-react';
+import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from './BrandIcons';
 import { detectPlatform } from '../utils/helpers';
 
 const URLInput = ({

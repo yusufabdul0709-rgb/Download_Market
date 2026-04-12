@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Youtube, Scissors } from 'lucide-react';
+import { Scissors } from 'lucide-react';
+import { YoutubeIcon as Youtube } from '../../components/BrandIcons';
 import URLInput from '../../components/URLInput';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';

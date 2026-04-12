@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Instagram, Film } from 'lucide-react';
+import { Film } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
