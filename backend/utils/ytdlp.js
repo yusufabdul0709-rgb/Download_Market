@@ -46,6 +46,14 @@ function baseArgs() {
     '--max-sleep-interval', '3',
   ];
 
+  // ── FREE RATE LIMIT BYPASS (YouTube) ──────────────────────────────────
+  // Tells yt-dlp to pretend we are an official YouTube Mobile App (iOS/Android).
+  // YouTube rarely blocks mobile APIs compared to web browsers.
+  args.push('--extractor-args', 'youtube:player_client=ios,android,default');
+  
+  // Wait even longer if they do throttle us temporarily
+  args.push('--sleep-requests', '1');
+
   // ── Cookies file (the #1 most important fix) ────────────────────────────
   // Without cookies, YouTube treats yt-dlp as an anonymous bot and aggressively
   // rate-limits it (HTTP 429). With cookies from a logged-in browser session,

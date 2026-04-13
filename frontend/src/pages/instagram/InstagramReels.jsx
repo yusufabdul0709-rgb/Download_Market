@@ -16,6 +16,7 @@ const InstagramReels = () => {
     preview,
     previewLoading,
     previewError,
+    previewStatusMessage,
     fetchMediaPreview,
     downloadState,
     startFormatDownload,
@@ -97,7 +98,7 @@ const InstagramReels = () => {
         {/* Loading */}
         {previewLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            <SkeletonLoader type="vertical-card" />
+            <SkeletonLoader type="vertical-card" statusMessage={previewStatusMessage} />
             <SkeletonLoader type="download-options" />
           </div>
         )}

@@ -17,6 +17,7 @@ const YouTubeVideo = () => {
     preview,
     previewLoading,
     previewError,
+    previewStatusMessage,
     fetchMediaPreview,
     downloadState,
     startFormatDownload,
@@ -102,7 +103,7 @@ const YouTubeVideo = () => {
         {/* Loading */}
         {previewLoading && (
           <div className="space-y-6">
-            <SkeletonLoader type="card" />
+            <SkeletonLoader type="card" statusMessage={previewStatusMessage} />
             <SkeletonLoader type="download-options" />
           </div>
         )}

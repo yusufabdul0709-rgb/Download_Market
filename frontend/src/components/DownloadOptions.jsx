@@ -1,12 +1,30 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileVideo, FileAudio, FileImage, FileArchive, Loader2 } from 'lucide-react';
 import { formatFileSize } from '../utils/helpers';
 
 const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {} }) => {
-  if (!formats || formats.length === 0) return null;
-
   const { activeFormat, status } = downloadState;
   const isAnyDownloading = status === 'queued' || status === 'processing';
+
+  const [loadingText, setLoadingText] = useState("Processing...");
+
+  useEffect(() => {
+    if (!isAnyDownloading) {
+      setLoadingText("Processing...");
+      return;
+    }
+
+    const timer1 = setTimeout(() => setLoadingText("High traffic detected. Please wait, you are in the queue..."), 5000);
+    const timer2 = setTimeout(() => setLoadingText("Your video is large or our servers are very busy. Hang tight..."), 15000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [isAnyDownloading]);
+
+  if (!formats || formats.length === 0) return null;
 
   const handleDownload = (format) => {
     if (onDownload) {
@@ -53,18 +71,18 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
         </div>
       )}
 
-      {/* Progress bar when downloading */}
-      {isAnyDownloading && downloadState.progress > 0 && (
+      {/* Progress bar and Message when downloading */}
+      {isAnyDownloading && (
         <div className="mb-4">
           <div className="flex justify-between text-xs text-text-muted mb-1.5">
-            <span>Processing...</span>
-            <span>{Math.round(downloadState.progress)}%</span>
+            <span className="animate-pulse">{loadingText}</span>
+            <span>{Math.round(downloadState.progress || 0)}%</span>
           </div>
           <div className="w-full h-2 bg-bg-surface-lighter rounded-full overflow-hidden shadow-inner">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${downloadState.progress}%` }}
+              animate={{ width: `${downloadState.progress || 0}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           </div>

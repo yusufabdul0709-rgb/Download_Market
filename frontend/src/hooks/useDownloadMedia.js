@@ -7,6 +7,27 @@ const POLL_INTERVAL = 2000;
 const MAX_POLL_ATTEMPTS = 90; // 3 minutes max
 
 /**
+ * Returns a user-friendly status message based on elapsed seconds while fetching preview.
+ * This helps the user understand why it's taking longer.
+ * @param {number} secs
+ * @returns {string}
+ */
+function getPreviewStatusMessage(secs) {
+  if (secs < 5) {
+    return 'Fetching media info...';
+  }
+  if (secs < 12) {
+    const remaining = 12 - secs;
+    return `Your network connection seems slow. Please wait ${remaining}s...`;
+  }
+  if (secs < 25) {
+    const remaining = 25 - secs;
+    return `You are in the queue. Hang tight for ~${remaining}s...`;
+  }
+  return 'Taking longer than usual. Our server is busy, almost there...';
+}
+
+/**
  * Custom hook for the complete download media flow:
  *  1. Validate URL
  *  2. Fetch preview from backend
@@ -21,6 +42,7 @@ const useDownloadMedia = () => {
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
+  const [previewElapsed, setPreviewElapsed] = useState(0); // seconds since preview was requested
 
   // Download state
   const [downloadState, setDownloadState] = useState({
@@ -34,6 +56,7 @@ const useDownloadMedia = () => {
   // Refs for cleanup
   const abortControllerRef = useRef(null);
   const pollTimerRef = useRef(null);
+  const elapsedTimerRef = useRef(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -43,6 +66,9 @@ const useDownloadMedia = () => {
       }
       if (pollTimerRef.current) {
         clearTimeout(pollTimerRef.current);
+      }
+      if (elapsedTimerRef.current) {
+        clearInterval(elapsedTimerRef.current);
       }
     };
   }, []);
@@ -76,6 +102,12 @@ const useDownloadMedia = () => {
       abortControllerRef.current.abort();
     }
 
+    // Reset elapsed timer
+    if (elapsedTimerRef.current) {
+      clearInterval(elapsedTimerRef.current);
+    }
+    setPreviewElapsed(0);
+
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
@@ -83,6 +115,11 @@ const useDownloadMedia = () => {
     setPreviewError(null);
     setPreview(null);
     resetDownloadState();
+
+    // Start a per-second counter so status messages can update live
+    elapsedTimerRef.current = setInterval(() => {
+      setPreviewElapsed((prev) => prev + 1);
+    }, 1000);
 
     try {
       const data = await fetchPreview(url.trim(), controller.signal);
@@ -95,6 +132,9 @@ const useDownloadMedia = () => {
       toast.error(message);
     } finally {
       setPreviewLoading(false);
+      setPreviewElapsed(0);
+      clearInterval(elapsedTimerRef.current);
+      elapsedTimerRef.current = null;
     }
   }, []);
 
@@ -257,9 +297,13 @@ const useDownloadMedia = () => {
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current);
     }
+    if (elapsedTimerRef.current) {
+      clearInterval(elapsedTimerRef.current);
+    }
     setPreview(null);
     setPreviewLoading(false);
     setPreviewError(null);
+    setPreviewElapsed(0);
     resetDownloadState();
   }, [resetDownloadState]);
 
@@ -268,6 +312,7 @@ const useDownloadMedia = () => {
     preview,
     previewLoading,
     previewError,
+    previewStatusMessage: getPreviewStatusMessage(previewElapsed),
     fetchMediaPreview,
 
     // Download

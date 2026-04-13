@@ -16,6 +16,7 @@ const InstagramPost = () => {
     preview,
     previewLoading,
     previewError,
+    previewStatusMessage,
     fetchMediaPreview,
     downloadState,
     startFormatDownload,
@@ -95,7 +96,7 @@ const InstagramPost = () => {
         </AnimatePresence>
 
         {/* Loading */}
-        {previewLoading && <SkeletonLoader type="card" />}
+        {previewLoading && <SkeletonLoader type="card" statusMessage={previewStatusMessage} />}
 
         {/* Results */}
         <AnimatePresence>
