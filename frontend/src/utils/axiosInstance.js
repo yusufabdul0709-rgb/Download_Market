@@ -53,6 +53,9 @@ axiosInstance.interceptors.response.use(
 
     if (status === 400) {
       message = serverMessage || 'Invalid or unsupported URL. Please check and try again.';
+    } else if (status === 401) {
+      // Specifically for yt-dlp cookie requirements
+      message = serverMessage || 'Authentication required to download this content. Please configure cookies.';
     } else if (status === 403) {
       message = serverMessage || 'This content is private or requires login.';
     } else if (status === 404) {

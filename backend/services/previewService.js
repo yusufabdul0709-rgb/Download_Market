@@ -1,7 +1,6 @@
 'use strict';
 
 const { fetchMetadata } = require('../utils/ytdlp');
-const { instagramGetUrl } = require('instagram-url-direct');
 const { enqueuePreview } = require('./concurrencyQueue');
 const logger = require('../utils/logger');
 
@@ -59,48 +58,100 @@ function normaliseYouTubeData(raw, url) {
 }
 
 /**
- * Fetch Instagram Data.
+ * Normalise raw yt-dlp JSON metadata into a clean preview object for Instagram.
+ * yt-dlp natively supports Instagram posts, reels, and stories.
+ *
+ * @param {object} raw   yt-dlp JSON output
+ * @param {string} url   Original URL
+ * @returns {object}
+ */
+function normaliseInstagramData(raw, url) {
+  const isReel = url.includes('/reel') || url.includes('/reels');
+  const isCarousel = Array.isArray(raw.entries) && raw.entries.length > 1;
+
+  // Build media list
+  let media = [];
+  if (isCarousel) {
+    media = raw.entries.map((entry) => ({
+      type: entry.ext === 'jpg' || entry.ext === 'png' || entry.ext === 'webp' ? 'image' : 'video',
+      url: entry.url || (entry.formats && entry.formats[0]?.url) || '',
+      thumbnail: entry.thumbnail || entry.thumbnails?.[0]?.url || '',
+    }));
+  } else {
+    // Single post/reel — check if it has video formats
+    const hasVideo = (raw.formats || []).some((f) => f.vcodec && f.vcodec !== 'none');
+    const bestUrl = raw.url || (raw.formats && raw.formats[0]?.url) || '';
+    media.push({
+      type: hasVideo ? 'video' : 'image',
+      url: bestUrl,
+      thumbnail: raw.thumbnail || raw.thumbnails?.[0]?.url || bestUrl,
+    });
+  }
+
+  // Determine type
+  let type = 'video';
+  if (isCarousel) {
+    type = 'carousel';
+  } else if (media.length === 1 && media[0].type === 'image') {
+    type = 'image';
+  } else if (isReel) {
+    type = 'video';
+  }
+
+  // Build available formats
+  const formats = [
+    {
+      formatId: 'best',
+      label: `Download ${type === 'carousel' ? 'All (Zip)' : type === 'video' ? 'Video' : 'Image'}`,
+      format: type === 'carousel' ? 'zip' : type === 'video' ? 'mp4' : 'jpg',
+    },
+  ];
+
+  // Add audio extraction option for video content
+  if (type !== 'image') {
+    formats.push({ formatId: 'audio', label: 'Extract Audio', format: 'mp3' });
+  }
+
+  return {
+    platform: 'instagram',
+    type,
+    title: raw.title || raw.description?.slice(0, 100) || 'Instagram Post',
+    thumbnail: raw.thumbnail || raw.thumbnails?.[0]?.url || null,
+    duration: raw.duration || null,
+    media,
+    formats,
+  };
+}
+
+/**
+ * Fetch Instagram Data using yt-dlp (replaces broken instagram-url-direct package).
  * @param {string} url
  * @returns {object}
  */
 async function fetchInstagramData(url) {
   try {
-    const raw = await instagramGetUrl(url);
-    if (!raw.url_list || raw.url_list.length === 0) {
-      throw new Error('No media found in this Instagram post.');
-    }
-
-    const { post_info, media_details } = raw;
-    const media = media_details.map(m => ({
-      type: m.type,
-      url: m.url,
-      thumbnail: m.url // Instagram returns direct streams, image streams act as thumbnails
-    }));
-
-    // Determine type
-    let type = 'video';
-    if (media.length > 1) {
-      type = 'carousel';
-    } else if (media.length === 1 && media[0].type === 'image') {
-      type = 'image';
-    } else {
-      type = 'video'; // defaults to reel/video
-    }
-
-    return {
-      platform: 'instagram',
-      type,
-      title: post_info?.caption || 'Instagram Post',
-      media,
-      formats: [
-        { formatId: 'direct', label: `Download ${type === 'carousel' ? 'All (Zip)' : type === 'video' ? 'Video' : 'Image'}`, format: type === 'carousel' ? 'zip' : type === 'video' ? 'mp4' : 'jpg' },
-        ...(type !== 'image' ? [{ formatId: 'audio', label: 'Extract Audio', format: 'mp3' }] : [])
-      ]
-    };
+    const raw = await fetchMetadata(url);
+    return normaliseInstagramData(raw, url);
   } catch (err) {
-    logger.error(`[Preview] instagramGetUrl failed: ${err.message}`);
-    const error = new Error('Could not fetch Instagram media. The post might be private or invalid.');
-    error.statusCode = 404;
+    logger.error(`[Preview] Instagram yt-dlp extraction failed: ${err.message}`);
+
+    // Detect login/cookie requirement errors
+    const msg = (err.message || '').toLowerCase();
+    let userMessage = 'Could not fetch Instagram media. The post might be private or invalid.';
+    let statusCode = 404;
+
+    if (msg.includes('cookies') || msg.includes('logged-in') || msg.includes('login') || msg.includes('authentication')) {
+      userMessage = 'Instagram requires authentication. Please set up cookies for yt-dlp (see YTDLP_COOKIES_PATH in .env) to download Instagram content.';
+      statusCode = 401;
+    } else if (msg.includes('not found') || msg.includes('404')) {
+      userMessage = 'This Instagram post was not found. It may have been deleted or the URL is incorrect.';
+    } else if (msg.includes('rate') || msg.includes('429') || msg.includes('too many')) {
+      userMessage = 'Instagram is rate-limiting requests. Please wait a few minutes and try again.';
+      statusCode = 429;
+    }
+
+    const error = new Error(userMessage);
+    error.statusCode = statusCode;
     error.isOperational = true;
     throw error;
   }

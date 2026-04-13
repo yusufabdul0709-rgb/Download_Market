@@ -12,12 +12,50 @@ export const isValidYouTubeURL = (url) => {
 };
 
 /**
+ * Checks if an Instagram URL is a browse/collection page (not a downloadable post).
+ * Examples: /reels/audio/123, /explore/tags/x, /reels/ (no shortcode)
+ */
+export const isInstagramBrowsePage = (url) => {
+  const browsePatterns = [
+    /instagram\.com\/reels\/audio\//i,
+    /instagram\.com\/reels\/trending/i,
+    /instagram\.com\/explore\//i,
+    /instagram\.com\/reels\/?$/i,
+    /instagram\.com\/reels\/\?/i,
+  ];
+  return browsePatterns.some((p) => p.test(url.trim()));
+};
+
+/**
+ * Returns a user-friendly hint for unsupported Instagram URL types.
+ */
+export const getInstagramURLHint = (url) => {
+  const trimmed = url.trim().toLowerCase();
+  if (trimmed.includes('/reels/audio/')) {
+    return 'This is an Instagram audio page, not a specific reel. Please open a reel that uses this audio and paste that URL instead (e.g. instagram.com/reel/ABC123/).';
+  }
+  if (trimmed.includes('/explore/')) {
+    return 'Explore pages cannot be downloaded. Please paste a direct link to a specific post or reel.';
+  }
+  if (/\/reels\/?($|\?)/.test(trimmed)) {
+    return 'This is the Reels browse page. Please paste a link to a specific reel (e.g. instagram.com/reel/ABC123/).';
+  }
+  return null;
+};
+
+/**
  * Validates an Instagram URL
  */
 export const isValidInstagramURL = (url) => {
+  // Reject browse/collection pages first
+  if (isInstagramBrowsePage(url)) return false;
+
   const patterns = [
-    /^(https?:\/\/)?(www\.)?instagram\.com\/(p|reel|reels|tv)\/[\w-]+/,
-    /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/[\w.]+\/\d+/,
+    /^(https?:\/\/)?(www\.)?instagram\.com\/p\/[\w-]+/,         // Posts
+    /^(https?:\/\/)?(www\.)?instagram\.com\/reel\/[\w-]+/,      // Reels (singular)
+    /^(https?:\/\/)?(www\.)?instagram\.com\/reels\/[\w-]+/,     // Reels (plural, specific shortcode)
+    /^(https?:\/\/)?(www\.)?instagram\.com\/tv\/[\w-]+/,        // IGTV
+    /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/[\w.]+\/\d+/, // Stories
   ];
   return patterns.some((pattern) => pattern.test(url.trim()));
 };
@@ -40,7 +78,8 @@ export const detectPlatform = (url) => {
     return 'youtube';
   }
   if (trimmed.includes('instagram.com')) {
-    if (trimmed.includes('/reel/') || trimmed.includes('/reels/')) return 'instagram-reels';
+    if (trimmed.includes('/reel/')) return 'instagram-reels';
+    if (trimmed.includes('/reels/') && !trimmed.includes('/reels/audio/')) return 'instagram-reels';
     if (trimmed.includes('/p/')) return 'instagram-post';
     return 'instagram';
   }

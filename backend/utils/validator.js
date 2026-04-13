@@ -37,6 +37,29 @@ function validateUrl(rawUrl) {
   // Detect platform
   const platform = matched.includes('instagram') ? 'instagram' : 'youtube';
 
+  // Reject Instagram browse/collection pages (not downloadable)
+  if (platform === 'instagram') {
+    const pathname = parsed.pathname.toLowerCase();
+    if (pathname.startsWith('/reels/audio/')) {
+      return {
+        valid: false,
+        error: 'This is an Instagram audio page, not a specific reel. Please open a reel that uses this audio and paste that URL instead (e.g. instagram.com/reel/ABC123/).',
+      };
+    }
+    if (pathname.startsWith('/explore/')) {
+      return {
+        valid: false,
+        error: 'Explore pages cannot be downloaded. Please paste a direct link to a specific post or reel.',
+      };
+    }
+    if (/^\/reels\/?$/.test(pathname)) {
+      return {
+        valid: false,
+        error: 'This is the Reels browse page. Please paste a link to a specific reel (e.g. instagram.com/reel/ABC123/).',
+      };
+    }
+  }
+
   return { valid: true, url: parsed, platform };
 }
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { fetchPreview, startDownload, checkDownloadStatus, triggerBrowserDownload } from '../services/mediaService';
-import { isValidURL, getPlatformInfo } from '../utils/helpers';
+import { isValidURL, getPlatformInfo, isInstagramBrowsePage, getInstagramURLHint } from '../utils/helpers';
 
 const POLL_INTERVAL = 2000;
 const MAX_POLL_ATTEMPTS = 90; // 3 minutes max
@@ -56,6 +56,15 @@ const useDownloadMedia = () => {
       toast.error('Please enter a URL');
       return;
     }
+
+    // Check for Instagram browse pages and give a specific helpful message
+    if (isInstagramBrowsePage(url.trim())) {
+      const hint = getInstagramURLHint(url.trim());
+      setPreviewError(hint || 'This URL is a browse page, not a specific post or reel.');
+      toast.error('This is not a downloadable URL');
+      return;
+    }
+
     if (!isValidURL(url.trim())) {
       setPreviewError('Unsupported URL. Please enter a valid YouTube or Instagram URL.');
       toast.error('Unsupported URL format');

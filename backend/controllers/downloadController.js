@@ -11,7 +11,6 @@ const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
 const { buildDownloadArgs, parseProgress, fetchMetadata } = require('../utils/ytdlp');
-const { instagramGetUrl } = require('instagram-url-direct');
 const axios = require('axios');
 const archiver = require('archiver');
 const { retryWithBackoff, isRetryableError } = require('../utils/retryHelper');
@@ -184,77 +183,51 @@ async function extractAudio(inputPath, outputPath) {
 }
 
 /**
- * Handle Instagram specific logic using direct fbcdn links.
+ * Handle Instagram specific logic using yt-dlp (replaces broken instagram-url-direct).
+ * yt-dlp natively supports Instagram posts, reels, and stories.
  */
 async function processInstagramJob(jobId, job) {
+  const { url, type } = job;
   const outBase = path.join(TEMP_DIR, jobId);
-  
-  // Re-fetch direct links (since they expire)
-  const raw = await instagramGetUrl(job.url);
-  if (!raw.url_list || raw.url_list.length === 0) {
-    throw new Error('Failed to extract direct media link from Instagram.');
+
+  let metadata;
+  try {
+    metadata = await fetchMetadata(url);
+  } catch (err) {
+    throw new Error(`Instagram metadata fetch failed: ${err.message}`);
   }
 
-  const title = sanitizeFilename(raw.post_info?.caption || 'Instagram Post');
-  updateJob(jobId, { progress: 30 });
+  updateJob(jobId, { progress: 10 });
 
-  let outputFile;
-  let prettyName;
+  const formatId = job.formatId || null;
+  const outTemplate = `${outBase}.%(ext)s`;
 
-  // Single Media / Audio Extraction
-  if (raw.media_details.length === 1) {
-    const m = raw.media_details[0];
-    const isImage = m.type === 'image';
-    
-    if (job.formatId === 'audio' && !isImage) {
-      // Audio Extraction
-      const tempVideo = `${outBase}.temp.mp4`;
-      outputFile = `${outBase}.mp3`;
-      prettyName = `${title}.mp3`;
-      
-      updateJob(jobId, { progress: 40 });
-      await downloadDirectMedia(m.url, tempVideo);
-      
-      updateJob(jobId, { progress: 80 });
-      await extractAudio(tempVideo, outputFile);
-      
-      // Cleanup temp
-      fs.unlink(tempVideo, () => {});
-    } else {
-      // Standard direct download
-      const ext = isImage ? '.jpg' : '.mp4';
-      outputFile = `${outBase}${ext}`;
-      prettyName = `${title}${ext}`;
-      
-      await downloadDirectMedia(m.url, outputFile);
-    }
+  const args = [];
+  args.push('--no-playlist', '--no-warnings', '--no-check-certificates');
+
+  if (formatId === 'audio' || type === 'audio') {
+    // Extract audio as MP3
+    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
   } else {
-    // Carousel - create ZIP
-    outputFile = `${outBase}.zip`;
-    prettyName = `${title} (Carousel).zip`;
-    
-    const output = fs.createWriteStream(outputFile);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    
-    const archivePromise = new Promise((resolve, reject) => {
-      output.on('close', resolve);
-      archive.on('warning', err => { if (err.code !== 'ENOENT') reject(err) });
-      archive.on('error', reject);
-    });
-
-    archive.pipe(output);
-
-    // Download each item as a stream and append to zip
-    for (let i = 0; i < raw.media_details.length; i++) {
-      const m = raw.media_details[i];
-      const ext = m.type === 'image' ? '.jpg' : '.mp4';
-      const response = await axios({ method: 'GET', url: m.url, responseType: 'stream' });
-      archive.append(response.data, { name: `${title}_${i+1}${ext}` });
-    }
-    
-    await archive.finalize();
-    await archivePromise;
+    // Download best available video/image
+    args.push('-f', 'best', '--merge-output-format', 'mp4', '-o', outTemplate, url);
   }
+
+  updateJob(jobId, { progress: 20 });
+
+  await retryWithBackoff(
+    () => runDownload(args, jobId),
+    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `ig-download-${jobId}` }
+  );
+
+  const outputFile = findOutputFile(outBase);
+  if (!outputFile || !fs.existsSync(outputFile)) {
+    throw new Error('Output file not found after Instagram download.');
+  }
+
+  const ext = path.extname(outputFile).toLowerCase() || '.mp4';
+  const title = metadata?.title || metadata?.description?.slice(0, 80) || 'Instagram Post';
+  const prettyName = sanitizeFilename(title) + ext;
 
   return { outputFile, prettyName };
 }

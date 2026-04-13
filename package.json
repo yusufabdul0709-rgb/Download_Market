@@ -1,0 +1,16 @@
+{
+  "name": "download-market",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Download Market – download videos, reels, posts and audio from YouTube & Instagram",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
+    "server": "npm run dev --prefix backend",
+    "server:start": "npm start --prefix backend",
+    "install:frontend": "npm install --prefix frontend",
+    "install:backend": "npm install --prefix backend",
+    "install:all": "npm run install:frontend && npm run install:backend"
+  }
+}
