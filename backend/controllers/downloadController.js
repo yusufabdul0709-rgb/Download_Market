@@ -310,7 +310,7 @@ async function processJob(jobId) {
       updateJob(jobId, { progress: 100 });
 
       const diskFileName = path.basename(result.outputFile);
-      const downloadUrl = `${config.baseUrl}/api/download/file/${jobId}/${encodeURIComponent(diskFileName)}`;
+      const downloadUrl = `/api/download/file/${jobId}/${encodeURIComponent(diskFileName)}`;
 
       updateJob(jobId, {
         status: 'completed',
