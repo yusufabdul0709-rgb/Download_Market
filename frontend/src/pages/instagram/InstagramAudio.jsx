@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Clock, User } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import AdBanner from '../../components/AdBanner';
+import IframeAdBanner from '../../components/IframeAdBanner';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -97,8 +98,8 @@ const InstagramAudio = () => {
           />
         </motion.div>
 
-        {/* Adsterra Native Banner */}
-        <AdBanner />
+        {/* Adsterra Iframe Banner */}
+        <IframeAdBanner id="ad-ig-audio-inline" className="mb-6" />
 
         {/* Error */}
         <AnimatePresence>

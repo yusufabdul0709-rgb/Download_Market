@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -20,6 +20,7 @@ import {
 import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from '../components/BrandIcons';
 import URLInput from '../components/URLInput';
 import AdBanner from '../components/AdBanner';
+import IframeAdBanner from '../components/IframeAdBanner';
 import { detectPlatform } from '../utils/helpers';
 
 const features = [
@@ -200,8 +201,8 @@ const LandingPage = () => {
             />
           </motion.div>
 
-          {/* Adsterra Native Banner */}
-          <AdBanner />
+          {/* Adsterra Iframe Banner - High visibility hero zone */}
+          <IframeAdBanner id="ad-hero-inline" className="my-4" />
 
           {/* CTA buttons */}
           <motion.div
@@ -260,29 +261,45 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {platforms.map((platform, index) => (
-              <motion.div
-                key={platform.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Link
-                  to={platform.path}
-                  className={`group flex items-start gap-4 p-5 bg-white rounded-2xl border border-primary/10 ${platform.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+              <React.Fragment key={platform.name}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <div className={`w-12 h-12 ${platform.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                    <platform.icon size={22} className={platform.color} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-text-primary font-bold mb-1 flex items-center gap-2">
-                      {platform.name}
-                      <ChevronRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </h3>
-                    <p className="text-text-secondary text-sm">{platform.description}</p>
-                  </div>
-                </Link>
-              </motion.div>
+                  <Link
+                    to={platform.path}
+                    className={`group flex items-start gap-4 p-5 bg-white rounded-2xl border border-primary/10 ${platform.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+                  >
+                    <div className={`w-12 h-12 ${platform.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <platform.icon size={22} className={platform.color} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-text-primary font-bold mb-1 flex items-center gap-2">
+                        {platform.name}
+                        <ChevronRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      </h3>
+                      <p className="text-text-secondary text-sm">{platform.description}</p>
+                    </div>
+                  </Link>
+                </motion.div>
+
+                {/* Inline Ad after every 3rd card */}
+                {(index + 1) % 3 === 0 && index < platforms.length - 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="sm:col-span-2 lg:col-span-3"
+                    id="ad-inline"
+                  >
+                    <div className="bg-white rounded-2xl border border-primary/10 p-4 flex justify-center">
+                      <IframeAdBanner id="ad-inline-iframe" />
+                    </div>
+                  </motion.div>
+                )}
+              </React.Fragment>
             ))}
           </div>
         </div>
@@ -323,6 +340,13 @@ const LandingPage = () => {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Ad between features and CTA */}
+      <section className="relative py-6 px-4 sm:px-6 z-10">
+        <div className="max-w-4xl mx-auto flex justify-center">
+          <AdBanner />
         </div>
       </section>
 

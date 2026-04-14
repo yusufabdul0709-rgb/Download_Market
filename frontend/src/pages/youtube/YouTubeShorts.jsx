@@ -5,6 +5,7 @@ import { Scissors } from 'lucide-react';
 import { YoutubeIcon as Youtube } from '../../components/BrandIcons';
 import URLInput from '../../components/URLInput';
 import AdBanner from '../../components/AdBanner';
+import IframeAdBanner from '../../components/IframeAdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -84,8 +85,8 @@ const YouTubeShorts = () => {
           />
         </motion.div>
 
-        {/* Adsterra Native Banner */}
-        <AdBanner />
+        {/* Adsterra Iframe Banner */}
+        <IframeAdBanner id="ad-yt-shorts-inline" className="mb-6" />
 
         {/* Error */}
         <AnimatePresence>

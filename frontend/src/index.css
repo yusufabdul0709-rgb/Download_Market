@@ -199,3 +199,122 @@ input:focus, textarea:focus {
   border-radius: 50%;
   pointer-events: none;
 }
+
+/* ══════════════════════════════════════════════════════
+   Ad Container Styles
+   ══════════════════════════════════════════════════════ */
+
+/* ── Iframe Ad wrapper (468×60) ── */
+.ad-iframe-wrapper {
+  width: 100%;
+  overflow: hidden;
+  padding: 12px 0;
+}
+
+.ad-iframe-inner {
+  display: flex;
+  justify-content: center;
+  min-height: 60px;
+}
+
+/* Scale the iframe ad on small screens so it never causes horizontal scroll */
+@media (max-width: 480px) {
+  .ad-iframe-inner {
+    transform: scale(0.72);
+    transform-origin: center center;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 600px) {
+  .ad-iframe-inner {
+    transform: scale(0.85);
+    transform-origin: center center;
+  }
+}
+
+/* ── Placeholder boxes for future ad slots ── */
+.ad-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  border: 2px dashed rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(236, 72, 153, 0.03) 100%);
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.ad-placeholder:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(236, 72, 153, 0.06) 100%);
+}
+
+.ad-placeholder-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(99, 102, 241, 0.35);
+  user-select: none;
+}
+
+/* ── Top Banner ── */
+.ad-top-bar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+}
+
+/* ── Sticky Bottom Mobile Ad ── */
+.ad-sticky-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Desktop Sidebar Ad ── */
+.ad-sidebar-rail {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: none;
+}
+
+.ad-sidebar-rail.left {
+  left: 12px;
+}
+
+.ad-sidebar-rail.right {
+  right: 12px;
+}
+
+/* Only show sidebar ads on very wide screens where there's gutter space */
+@media (min-width: 1440px) {
+  .ad-sidebar-rail {
+    display: block;
+  }
+}
+
+/* ── Extra padding at the bottom to prevent sticky ad overlap ── */
+@media (max-width: 768px) {
+  footer {
+    padding-bottom: 80px !important;
+  }
+}

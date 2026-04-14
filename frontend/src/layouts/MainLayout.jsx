@@ -2,6 +2,9 @@ import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import IframeAdBanner from '../components/IframeAdBanner';
+import AdBanner from '../components/AdBanner';
+import AdPlaceholder from '../components/AdPlaceholder';
 
 const MainLayout = () => {
   return (
@@ -27,11 +30,29 @@ const MainLayout = () => {
           },
         }}
       />
+
+      {/* ── Top Banner Ad (above the fold) ── */}
+      <div className="ad-top-bar" id="ad-top">
+        <IframeAdBanner id="ad-top-iframe" />
+      </div>
+
       <Navbar />
+
+      {/* ── Desktop Sidebar Ad (right gutter, only on wide screens) ── */}
+      <div className="ad-sidebar-rail right" id="ad-sidebar">
+        <AdBanner />
+      </div>
+
       <main className="flex-1 pt-20">
         <Outlet />
       </main>
+
       <Footer />
+
+      {/* ── Sticky Bottom Mobile Ad ── */}
+      <div className="ad-sticky-bottom block md:hidden" id="ad-sticky">
+        <IframeAdBanner id="ad-sticky-iframe" />
+      </div>
     </div>
   );
 };
