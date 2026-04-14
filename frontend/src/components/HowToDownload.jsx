@@ -4,29 +4,22 @@ import { ClipboardCopy, Search, Download, CheckCircle } from 'lucide-react';
 const steps = [
   {
     icon: ClipboardCopy,
-    title: 'Copy the URL',
-    description: 'Open the app (YouTube, Instagram, etc.), find the content you want, and copy its URL/link.',
+    title: '1. Copy link',
+    description: 'Open the app, find the video or media you want, and copy its link.',
     color: 'text-primary',
     bg: 'bg-primary/10',
   },
   {
     icon: Search,
-    title: 'Paste & Fetch',
-    description: 'Paste the copied URL into the input box above and click the Fetch button to load the preview.',
+    title: '2. Paste link',
+    description: 'Paste the copied link into the input box above and click the Fetch button.',
     color: 'text-secondary',
     bg: 'bg-secondary/10',
   },
   {
     icon: Download,
-    title: 'Choose & Download',
-    description: 'Select your preferred quality or format from the options and click download. The file will save automatically.',
-    color: 'text-accent',
-    bg: 'bg-accent/10',
-  },
-  {
-    icon: CheckCircle,
-    title: 'Enjoy!',
-    description: 'Your file is saved! You can find it in your device\'s Downloads folder. No sign-ups or fees required.',
+    title: '3. Download',
+    description: 'Select your preferred quality or format and click download to save the file.',
     color: 'text-success',
     bg: 'bg-success/10',
   },
@@ -55,7 +48,7 @@ const HowToDownload = ({ platform = 'media' }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         {steps.map((step, index) => (
           <motion.div
             key={step.title}

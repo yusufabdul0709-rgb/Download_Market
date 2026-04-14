@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /youtube/video
+Allow: /youtube/shorts
+Allow: /instagram/reels
+Allow: /instagram/post
+Allow: /instagram/audio
+
+# Disallow API or backend routes if exposed
+Disallow: /api/
+Disallow: /*?*
+
+Sitemap: https://downloadmarket.app/sitemap.xml

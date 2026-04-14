@@ -48,6 +48,67 @@ const SEOHead = ({ title, description }) => {
     setOG('og:description', description || 'Free YouTube & Instagram downloader');
     setOG('og:type', 'website');
     setOG('og:url', `${window.location.origin}${location.pathname}`);
+
+    // --- Inject JSON-LD Schema ---
+    let schemaScript = document.querySelector('script[id="dynamic-seo-schema"]');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.type = 'application/ld+json';
+      schemaScript.id = 'dynamic-seo-schema';
+      document.head.appendChild(schemaScript);
+    }
+    
+    // Build a WebApplication + FAQPage schema
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": title || "Download Market",
+          "url": `${window.location.origin}${location.pathname}`,
+          "description": description || "Download YouTube and Instagram videos for free in HD.",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "All",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Is it free?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Download Market is 100% free. No sign-up, no subscription, and no hidden charges. Just paste your link and download."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Do I need login?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No, you do not need to create an account or provide any personal information. You can use our downloader instantly without logging in."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is it safe?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. It is completely safe. We don't store any of your data, downloads, or history. All downloads are processed securely on our servers."
+              }
+            }
+          ]
+        }
+      ]
+    };
+    
+    schemaScript.textContent = JSON.stringify(schemaData);
+
   }, [title, description, location.pathname]);
 
   return null;

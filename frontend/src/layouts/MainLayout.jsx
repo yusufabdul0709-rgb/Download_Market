@@ -51,6 +51,14 @@ const MainLayout = () => {
       <div className="ad-sticky-bottom block md:hidden" id="ad-sticky">
         <IframeAdBanner id="ad-sticky-iframe" />
       </div>
+
+      {/* ── Sidebar Sticky Ads (Desktop > 1440px) ── */}
+      <div className="ad-sidebar-rail left" id="ad-sidebar-left">
+        <IframeAdBanner id="ad-sidebar-left-iframe" width={160} height={600} />
+      </div>
+      <div className="ad-sidebar-rail right" id="ad-sidebar-right">
+        <IframeAdBanner id="ad-sidebar-right-iframe" width={160} height={600} />
+      </div>
     </div>
   );
 };

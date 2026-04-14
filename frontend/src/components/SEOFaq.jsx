@@ -8,24 +8,16 @@ import { motion } from 'framer-motion';
 const SEOFaq = ({ platform = 'Downloads', items = [] }) => {
   const defaultItems = [
     {
-      question: `Is ${platform} really free?`,
-      answer: 'Yes! Download Market is 100% free. No sign-up, no subscription, no hidden charges. Just paste a link and download.',
+      question: 'Is it free?',
+      answer: 'Yes! Download Market is 100% free. No sign-up, no subscription, and no hidden charges. Just paste your link and download.',
     },
     {
-      question: `Can I download ${platform} on my phone?`,
-      answer: 'Absolutely. Our tool works on all devices — Android, iPhone, iPad, laptop, and desktop. No app installation required.',
+      question: 'Do I need login?',
+      answer: 'No, you do not need to create an account or provide any personal information. You can use our downloader instantly without logging in.',
     },
     {
-      question: `Is it safe to download ${platform}?`,
-      answer: 'Yes. We don\'t store any of your data, downloads, or personal information. All downloads are processed securely on our servers.',
-    },
-    {
-      question: `What quality can I download ${platform} in?`,
-      answer: 'You can download in the highest quality available — up to 1080p Full HD for video, and 320kbps for audio. We always offer the best formats.',
-    },
-    {
-      question: `Do downloads have a watermark?`,
-      answer: 'No. All downloads from Download Market are clean, original files without any added watermarks or branding.',
+      question: 'Is it safe?',
+      answer: 'Yes. It is completely safe. We don\'t store any of your data, downloads, or history. All downloads are processed securely on our servers.',
     },
   ];
 

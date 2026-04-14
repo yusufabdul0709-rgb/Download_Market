@@ -29,31 +29,31 @@ import { detectPlatform } from '../utils/helpers';
 const features = [
   {
     icon: Zap,
-    title: 'Lightning Fast',
-    description: 'Download videos in seconds with our optimized processing pipeline.',
+    title: 'Fast download',
+    description: 'Process and fetch your media links instantly in seconds.',
     color: 'text-warning',
     bg: 'bg-warning/10',
   },
   {
-    icon: Shield,
-    title: 'Safe & Private',
-    description: 'No tracking, no history stored. Your privacy comes first.',
-    color: 'text-success',
-    bg: 'bg-success/10',
+    icon: Download,
+    title: 'HD quality',
+    description: 'Get the highest resolution possible, up to 1080p and 4K.',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
   },
   {
     icon: Smartphone,
-    title: 'All Devices',
-    description: 'Works seamlessly on desktop, tablet, and mobile devices.',
+    title: 'No watermark',
+    description: 'All downloads are clean, original, and free from watermarks.',
     color: 'text-accent',
     bg: 'bg-accent/10',
   },
   {
-    icon: Download,
-    title: 'Multiple Formats',
-    description: 'Choose from various quality options — 360p to 1080p, plus MP3.',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
+    icon: Shield,
+    title: 'Free & secure',
+    description: 'No hidden fees, no tracking, and fully secure connections.',
+    color: 'text-success',
+    bg: 'bg-success/10',
   },
 ];
 
@@ -102,6 +102,15 @@ const platforms = [
     bg: 'bg-instagram/10',
     borderColor: 'hover:border-instagram/30',
     description: 'Extract audio from Instagram content',
+  },
+  {
+    name: 'Instagram Story',
+    icon: Smartphone,
+    path: '/instagram/reels', // Stories use same pipeline
+    color: 'text-instagram',
+    bg: 'bg-instagram/10',
+    borderColor: 'hover:border-instagram/30',
+    description: 'Download 24h Instagram Stories',
   },
 ];
 
@@ -152,8 +161,8 @@ const LandingPage = () => {
   return (
     <div className="relative overflow-hidden">
       <SEOHead
-        title="Free Video & Reels Downloader - YouTube & Instagram"
-        description="Download YouTube videos, shorts, Instagram reels, posts and audio for free in HD quality. No watermark, no signup required. Fast and safe online video downloader."
+        title="Free Instagram Video & Reels Downloader"
+        description="Download Instagram videos, reels, photos, and audio for free in HD quality. No watermark, no signup required. Fast and safe online downloader."
       />
       {/* Background effects */}
       <div className="absolute inset-0 animated-gradient opacity-80" />
@@ -185,8 +194,7 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-text-primary"
           >
-            Free <span className="gradient-text">Video</span> &{' '}
-            <span className="gradient-text-alt">Reels</span> Downloader
+            Free <span className="gradient-text-alt">Instagram</span> Video & Reels Downloader
           </motion.h1>
 
           {/* Subtitle */}
@@ -319,7 +327,7 @@ const LandingPage = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-text-primary mb-4">
-              Why Choose <span className="gradient-text-alt">Download Market</span>?
+              Why Use Our <span className="gradient-text-alt">Downloader</span>?
             </h2>
             <p className="text-text-secondary max-w-lg mx-auto font-medium">
               Built with performance, security, and ease of use in mind.

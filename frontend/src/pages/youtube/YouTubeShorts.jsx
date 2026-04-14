@@ -140,7 +140,7 @@ const YouTubeShorts = () => {
               exit={{ opacity: 0 }}
               className="space-y-6"
             >
-              <div id="ad-download-top" className="mb-2">
+              <div id="ad-before-download" className="mb-2">
                 <IframeAdBanner id="ad-yt-shorts-pre-result" />
               </div>
 
@@ -156,7 +156,7 @@ const YouTubeShorts = () => {
               </div>
 
               {/* ═══ 6. Ad below result ═══ */}
-              <div id="ad-download-bottom" className="mt-4">
+              <div id="ad-after-download" className="mt-4">
                 <IframeAdBanner id="ad-yt-shorts-bottom" />
               </div>
             </motion.div>

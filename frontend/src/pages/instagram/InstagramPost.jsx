@@ -134,7 +134,7 @@ const InstagramPost = () => {
               exit={{ opacity: 0 }}
               className="space-y-6"
             >
-              <div id="ad-download-top" className="mb-2">
+              <div id="ad-before-download" className="mb-2">
                 <IframeAdBanner id="ad-ig-post-pre-result" />
               </div>
 
@@ -148,7 +148,7 @@ const InstagramPost = () => {
               />
 
               {/* ═══ 6. Ad below result ═══ */}
-              <div id="ad-download-bottom" className="mt-4">
+              <div id="ad-after-download" className="mt-4">
                 <IframeAdBanner id="ad-ig-post-bottom" />
               </div>
             </motion.div>
