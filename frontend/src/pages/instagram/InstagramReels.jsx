@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Film } from 'lucide-react';
 import URLInput from '../../components/URLInput';
+import AdBanner from '../../components/AdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -81,6 +82,9 @@ const InstagramReels = () => {
             id="instagram-reels-url-input"
           />
         </motion.div>
+
+        {/* Adsterra Native Banner */}
+        <AdBanner />
 
         {/* Error */}
         <AnimatePresence>

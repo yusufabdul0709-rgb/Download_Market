@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from '../components/BrandIcons';
 import URLInput from '../components/URLInput';
+import AdBanner from '../components/AdBanner';
 import { detectPlatform } from '../utils/helpers';
 
 const features = [
@@ -198,6 +199,9 @@ const LandingPage = () => {
               id="hero-url-input"
             />
           </motion.div>
+
+          {/* Adsterra Native Banner */}
+          <AdBanner />
 
           {/* CTA buttons */}
           <motion.div

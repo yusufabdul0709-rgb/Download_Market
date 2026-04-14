@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Clock, User } from 'lucide-react';
 import URLInput from '../../components/URLInput';
+import AdBanner from '../../components/AdBanner';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -95,6 +96,9 @@ const InstagramAudio = () => {
             id="instagram-audio-url-input"
           />
         </motion.div>
+
+        {/* Adsterra Native Banner */}
+        <AdBanner />
 
         {/* Error */}
         <AnimatePresence>

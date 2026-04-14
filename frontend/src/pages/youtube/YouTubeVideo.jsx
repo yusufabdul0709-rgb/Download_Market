@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Video } from 'lucide-react';
 import { YoutubeIcon as Youtube } from '../../components/BrandIcons';
 import URLInput from '../../components/URLInput';
+import AdBanner from '../../components/AdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -86,6 +87,9 @@ const YouTubeVideo = () => {
             id="youtube-video-url-input"
           />
         </motion.div>
+
+        {/* Adsterra Native Banner */}
+        <AdBanner />
 
         {/* Error */}
         <AnimatePresence>
