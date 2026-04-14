@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ClipboardCopy, Search, Download, CheckCircle, Link2, Send, Bookmark, MoreHorizontal } from 'lucide-react';
+import IframeAdBanner from './IframeAdBanner';
 
 const Step1Visual = () => (
   <div className="w-full h-full bg-[#000000] rounded-xl relative overflow-hidden flex flex-col justify-end border border-slate-200 dark:border-slate-800">
@@ -129,6 +130,11 @@ const HowToDownload = ({ platform = 'media' }) => {
       transition={{ duration: 0.5 }}
       className="mt-16 mb-8"
     >
+      {/* Inline Ad Above the entire How To Section */}
+      <div className="mb-10 flex justify-center w-full" id={`ad-howto-top-${platform.replace(/\s+/g, '-').toLowerCase()}`}>
+        <IframeAdBanner id={`ad-iframe-howto-top-${platform.replace(/\s+/g, '-').toLowerCase()}`} />
+      </div>
+
       <div className="text-center mb-10">
         <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-3">
           How to Download{' '}
@@ -163,7 +169,6 @@ const HowToDownload = ({ platform = 'media' }) => {
         ))}
       </div>
 
-      {/* SEO-friendly FAQ-like text block */}
       <div className="mt-10 bg-white rounded-2xl p-6 sm:p-8 border border-primary/8">
         <h3 className="text-text-primary font-bold text-lg mb-3">
           Why use Download Market?
