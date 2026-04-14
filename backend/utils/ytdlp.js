@@ -19,7 +19,7 @@ if (fs.existsSync(DENO_BIN_DIR)) {
   spawnEnv.PATH = `${DENO_BIN_DIR}${sep}${process.env.PATH || ''}`;
   logger.info(`[yt-dlp] Deno runtime found at ${DENO_BIN_DIR}`);
 } else {
-  logger.warn(`[yt-dlp] Deno not found at ${DENO_BIN_DIR} — YouTube extraction may be degraded`);
+  logger.debug(`[yt-dlp] Deno not found at ${DENO_BIN_DIR} (optional)`);
 }
 
 // ── Shared base arguments ─────────────────────────────────────────────────────

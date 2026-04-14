@@ -82,7 +82,7 @@ const InstagramReels = () => {
             Instagram Reels Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download Instagram Reels in HD — Free & Fast
+            Download <span class="gradient-text">Instagram Reels</span> in HD — Free & Fast
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Save any Instagram Reel to your device in full HD quality. No watermark, no signup, works on all devices.

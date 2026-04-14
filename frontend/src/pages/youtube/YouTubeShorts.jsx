@@ -81,7 +81,7 @@ const YouTubeShorts = () => {
             YouTube Shorts Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download YouTube Shorts in HD — Free & Fast
+            Download <span class="gradient-text">YouTube Shorts</span> in HD — Free & Fast
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Save YouTube Shorts videos in HD quality. No watermark, works on all devices, completely free.

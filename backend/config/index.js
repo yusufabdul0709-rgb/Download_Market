@@ -21,7 +21,7 @@ const config = {
 
   // ── yt-dlp ───────────────────────────────────────────────────────────────
   ytdlp: {
-    binary: process.env.YTDLP_PATH || 'yt-dlp',
+    binary: process.env.YTDLP_PATH || path.resolve(__dirname, '..', 'bin', process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'),
     maxDurationSeconds:
       parseInt(process.env.MAX_DURATION_SECONDS, 10) || 3600,
     // Path to Netscape-format cookies.txt file exported from your browser.

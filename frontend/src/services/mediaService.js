@@ -61,27 +61,53 @@ export const checkDownloadStatus = async (jobId) => {
  * @param {string} downloadUrl - The URL to download from
  * @param {string} filename - Suggested filename
  */
-export const triggerBrowserDownload = (downloadUrl, filename) => {
-  // Resolve the full URL
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-  let fullUrl = downloadUrl;
+export const triggerBrowserDownload = async (downloadUrl, filename) => {
+  try {
+    // Fetch the file as a Blob using the shared true axios instance
+    const response = await axiosInstance.get(downloadUrl, {
+      responseType: 'blob',
+    });
 
-  if (downloadUrl.startsWith('/') && apiBase) {
-    fullUrl = `${apiBase}${downloadUrl}`;
-  } else if (downloadUrl.startsWith('/')) {
-    fullUrl = downloadUrl;
+    let finalFilename = filename || 'download';
+    const disposition = response.headers['content-disposition'];
+    
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        // Decode URI component in case it's encoded like RFC 5987
+        try {
+          finalFilename = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+        } catch(e) {
+          finalFilename = matches[1].replace(/['"]/g, '');
+        }
+      }
+    }
+
+    const blob = new Blob([response.data], { type: response.headers['content-type'] });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', finalFilename);
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Blob inline download failed, using standard fallback:', error);
+    
+    // Resolve full url for the fallback
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    const fullUrl = downloadUrl.startsWith('/') && apiBase ? `${apiBase}${downloadUrl}` : downloadUrl;
+    
+    const link = document.createElement('a');
+    link.href = fullUrl;
+    link.target = '_self'; // Prevents opening a ghost tab
+    link.setAttribute('download', filename || 'download');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
-
-  // Use a direct DOM anchor click. 
-  // We avoid target="_blank" as modern pop-up blockers intercept it when triggered from within an async polling interval.
-  // Since the backend returns Content-Disposition: attachment, it safely downloads without leaving the page.
-  const link = document.createElement('a');
-  link.href = fullUrl;
-  link.setAttribute('download', filename || 'download');
-  document.body.appendChild(link);
-  
-  link.click();
-  
-  // Clean up instantly
-  document.body.removeChild(link);
 };

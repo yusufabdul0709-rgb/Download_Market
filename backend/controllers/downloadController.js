@@ -12,6 +12,8 @@ const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
 const { buildDownloadArgs, parseProgress, fetchMetadata } = require('../utils/ytdlp');
 const axios = require('axios');
+const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
 const archiver = require('archiver');
 const { retryWithBackoff, isRetryableError } = require('../utils/retryHelper');
 const { asyncHandler, AppError } = require('../utils/asyncHandler');
@@ -23,9 +25,20 @@ const TEMP_DIR = path.resolve(config.tempDir);
 // ── Deno PATH for download spawns ─────────────────────────────────────────────
 const DENO_BIN_DIR = path.join(os.homedir(), '.deno', 'bin');
 const spawnEnv = { ...process.env };
+const sep = process.platform === 'win32' ? ';' : ':';
+
 if (fs.existsSync(DENO_BIN_DIR)) {
-  const sep = process.platform === 'win32' ? ';' : ':';
-  spawnEnv.PATH = `${DENO_BIN_DIR}${sep}${process.env.PATH || ''}`;
+  spawnEnv.PATH = `${DENO_BIN_DIR}${sep}${spawnEnv.PATH || ''}`;
+}
+
+// Add ffmpeg and ffprobe directories directly to the execution PATH
+// yt-dlp automatically resolves them safely without --ffmpeg-location
+if (ffmpegPath && ffprobePath) {
+  const ffmpegDir = path.dirname(ffmpegPath);
+  const ffprobeDir = path.dirname(ffprobePath);
+  // Ensure we don't prepend duplicate dirs if they are the same
+  const binDirs = Array.from(new Set([ffmpegDir, ffprobeDir])).join(sep);
+  spawnEnv.PATH = `${binDirs}${sep}${spawnEnv.PATH || ''}`;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

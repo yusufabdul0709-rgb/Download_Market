@@ -94,7 +94,7 @@ const InstagramAudio = () => {
             Instagram Audio Extractor
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Extract Instagram Audio as MP3 — Free
+            Extract <span class="gradient-text">Instagram Audio</span> as MP3 — Free
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Extract and download audio from Instagram Reels and videos as high quality MP3. No watermark, no signup.

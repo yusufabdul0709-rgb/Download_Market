@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video } from 'lucide-react';
+import { Video, Clock, Film, Heart, MessageCircle } from 'lucide-react';
 import { YoutubeIcon as Youtube } from '../../components/BrandIcons';
 import URLInput from '../../components/URLInput';
 import IframeAdBanner from '../../components/IframeAdBanner';
@@ -84,7 +84,7 @@ const YouTubeVideo = () => {
             YouTube Video Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download YouTube Videos in HD — Free & Fast
+            Download <span class="gradient-text">YouTube Videos</span> in HD — Free & Fast
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Save YouTube videos in HD quality (360p to 1080p) or extract audio as MP3. No watermark, no signup.

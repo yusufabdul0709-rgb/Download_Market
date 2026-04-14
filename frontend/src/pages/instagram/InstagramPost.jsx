@@ -80,7 +80,7 @@ const InstagramPost = () => {
             Instagram Post Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download Instagram Posts — Photos & Videos Free
+            Download <span class="gradient-text">Instagram Posts</span>— Photos & Videos Free
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
             Save photos, carousels, and videos from Instagram posts in full HD quality. No watermark, no signup.
