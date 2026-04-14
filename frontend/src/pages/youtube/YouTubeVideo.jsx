@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Video } from 'lucide-react';
 import { YoutubeIcon as Youtube } from '../../components/BrandIcons';
 import URLInput from '../../components/URLInput';
-import AdBanner from '../../components/AdBanner';
 import IframeAdBanner from '../../components/IframeAdBanner';
+import AdBanner from '../../components/AdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import HowToDownload from '../../components/HowToDownload';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 
 const YouTubeVideo = () => {
@@ -41,7 +42,6 @@ const YouTubeVideo = () => {
 
   const handleUrlChange = (newUrl) => {
     setUrl(newUrl);
-    // Reset results when URL changes
     if (!newUrl.trim()) {
       resetAll();
     }
@@ -54,7 +54,8 @@ const YouTubeVideo = () => {
       <div className="blob-blue bottom-[-100px] left-[-100px]" />
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
-        {/* Header */}
+
+        {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,12 +73,12 @@ const YouTubeVideo = () => {
           </p>
         </motion.div>
 
-        {/* URL Input */}
+        {/* ═══ 2. Input Box ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-10"
+          className="mb-6"
         >
           <URLInput
             value={url}
@@ -89,8 +90,10 @@ const YouTubeVideo = () => {
           />
         </motion.div>
 
-        {/* Adsterra Iframe Banner */}
-        <IframeAdBanner id="ad-yt-video-inline" className="mb-6" />
+        {/* ═══ 3. Inline Ad (after input) 💰 ═══ */}
+        <div className="mb-8" id="ad-inline">
+          <IframeAdBanner id="ad-yt-video-inline" />
+        </div>
 
         {/* Error */}
         <AnimatePresence>
@@ -113,15 +116,20 @@ const YouTubeVideo = () => {
           </div>
         )}
 
-        {/* Results */}
+        {/* ═══ 4. Ad before result 💰💰 (VERY IMPORTANT) ═══ */}
         <AnimatePresence>
           {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-8"
+              className="space-y-6"
             >
+              <div id="ad-download-top" className="mb-2">
+                <AdBanner />
+              </div>
+
+              {/* ═══ 5. Download Result ═══ */}
               <PreviewCard data={preview} />
               <DownloadOptions
                 formats={preview.formats}
@@ -129,6 +137,11 @@ const YouTubeVideo = () => {
                 onDownload={startFormatDownload}
                 downloadState={downloadState}
               />
+
+              {/* ═══ 6. Ad below result ═══ */}
+              <div id="ad-download-bottom" className="mt-4">
+                <IframeAdBanner id="ad-yt-video-bottom" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -149,6 +162,15 @@ const YouTubeVideo = () => {
             </p>
           </motion.div>
         )}
+
+        {/* ═══ 7. How to Download Section ═══ */}
+        <HowToDownload platform="YouTube Videos" />
+
+        {/* ═══ 8. Footer Ad ═══ */}
+        <div id="ad-footer" className="mt-8">
+          <IframeAdBanner id="ad-yt-video-footer" />
+        </div>
+
       </div>
     </div>
   );

@@ -3,12 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Film } from 'lucide-react';
 import URLInput from '../../components/URLInput';
-import AdBanner from '../../components/AdBanner';
 import IframeAdBanner from '../../components/IframeAdBanner';
+import AdBanner from '../../components/AdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import HowToDownload from '../../components/HowToDownload';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 
 const InstagramReels = () => {
@@ -49,7 +50,8 @@ const InstagramReels = () => {
       <div className="blob-violet bottom-[-100px] right-[-100px]" />
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
-        {/* Header */}
+
+        {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,12 +69,12 @@ const InstagramReels = () => {
           </p>
         </motion.div>
 
-        {/* URL Input */}
+        {/* ═══ 2. Input Box ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-10"
+          className="mb-6"
         >
           <URLInput
             value={url}
@@ -84,8 +86,10 @@ const InstagramReels = () => {
           />
         </motion.div>
 
-        {/* Adsterra Iframe Banner */}
-        <IframeAdBanner id="ad-ig-reels-inline" className="mb-6" />
+        {/* ═══ 3. Inline Ad (after input) 💰 ═══ */}
+        <div className="mb-8" id="ad-inline">
+          <IframeAdBanner id="ad-ig-reels-inline" />
+        </div>
 
         {/* Error */}
         <AnimatePresence>
@@ -108,22 +112,34 @@ const InstagramReels = () => {
           </div>
         )}
 
-        {/* Results */}
+        {/* ═══ 4. Ad before result 💰💰 (VERY IMPORTANT) ═══ */}
         <AnimatePresence>
           {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start"
+              className="space-y-6"
             >
-              <PreviewCard data={preview} isVertical />
-              <DownloadOptions
-                formats={preview.formats}
-                url={url}
-                onDownload={startFormatDownload}
-                downloadState={downloadState}
-              />
+              <div id="ad-download-top" className="mb-2">
+                <AdBanner />
+              </div>
+
+              {/* ═══ 5. Download Result ═══ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <PreviewCard data={preview} isVertical />
+                <DownloadOptions
+                  formats={preview.formats}
+                  url={url}
+                  onDownload={startFormatDownload}
+                  downloadState={downloadState}
+                />
+              </div>
+
+              {/* ═══ 6. Ad below result ═══ */}
+              <div id="ad-download-bottom" className="mt-4">
+                <IframeAdBanner id="ad-ig-reels-bottom" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -144,6 +160,15 @@ const InstagramReels = () => {
             </p>
           </motion.div>
         )}
+
+        {/* ═══ 7. How to Download Section ═══ */}
+        <HowToDownload platform="Instagram Reels" />
+
+        {/* ═══ 8. Footer Ad ═══ */}
+        <div id="ad-footer" className="mt-8">
+          <IframeAdBanner id="ad-ig-reels-footer" />
+        </div>
+
       </div>
     </div>
   );

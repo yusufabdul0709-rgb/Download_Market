@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Image as ImageIcon, Download } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import URLInput from '../../components/URLInput';
-import AdBanner from '../../components/AdBanner';
 import IframeAdBanner from '../../components/IframeAdBanner';
+import AdBanner from '../../components/AdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import HowToDownload from '../../components/HowToDownload';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 
 const InstagramPost = () => {
@@ -49,7 +50,8 @@ const InstagramPost = () => {
       <div className="blob-violet bottom-[-100px] right-[-100px]" />
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
-        {/* Header */}
+
+        {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -62,17 +64,17 @@ const InstagramPost = () => {
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
             Download Instagram Posts
           </h1>
-          <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
-            Save video posts, Reels, and IGTV from Instagram.
+          <p className="text-text-secondary font-medium max-w-lg mx-auto">
+            Save photos, carousels, and video posts from Instagram in full quality.
           </p>
         </motion.div>
 
-        {/* URL Input */}
+        {/* ═══ 2. Input Box ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-10"
+          className="mb-6"
         >
           <URLInput
             value={url}
@@ -84,8 +86,10 @@ const InstagramPost = () => {
           />
         </motion.div>
 
-        {/* Adsterra Iframe Banner */}
-        <IframeAdBanner id="ad-ig-post-inline" className="mb-6" />
+        {/* ═══ 3. Inline Ad (after input) 💰 ═══ */}
+        <div className="mb-8" id="ad-inline">
+          <IframeAdBanner id="ad-ig-post-inline" />
+        </div>
 
         {/* Error */}
         <AnimatePresence>
@@ -103,15 +107,20 @@ const InstagramPost = () => {
         {/* Loading */}
         {previewLoading && <SkeletonLoader type="card" statusMessage={previewStatusMessage} />}
 
-        {/* Results */}
+        {/* ═══ 4. Ad before result 💰💰 (VERY IMPORTANT) ═══ */}
         <AnimatePresence>
           {preview && !previewLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-8"
+              className="space-y-6"
             >
+              <div id="ad-download-top" className="mb-2">
+                <AdBanner />
+              </div>
+
+              {/* ═══ 5. Download Result ═══ */}
               <PreviewCard data={preview} />
               <DownloadOptions
                 formats={preview.formats}
@@ -119,6 +128,11 @@ const InstagramPost = () => {
                 onDownload={startFormatDownload}
                 downloadState={downloadState}
               />
+
+              {/* ═══ 6. Ad below result ═══ */}
+              <div id="ad-download-bottom" className="mt-4">
+                <IframeAdBanner id="ad-ig-post-bottom" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -139,6 +153,15 @@ const InstagramPost = () => {
             </p>
           </motion.div>
         )}
+
+        {/* ═══ 7. How to Download Section ═══ */}
+        <HowToDownload platform="Instagram Posts" />
+
+        {/* ═══ 8. Footer Ad ═══ */}
+        <div id="ad-footer" className="mt-8">
+          <IframeAdBanner id="ad-ig-post-footer" />
+        </div>
+
       </div>
     </div>
   );

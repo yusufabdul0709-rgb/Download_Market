@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileVideo, FileAudio, FileImage, FileArchive, Loader2 } from 'lucide-react';
 import { formatFileSize } from '../utils/helpers';
-import IframeAdBanner from './IframeAdBanner';
-import AdBanner from './AdBanner';
 
 const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {} }) => {
   const { activeFormat, status } = downloadState;
@@ -91,11 +89,6 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
         </div>
       )}
 
-      {/* ── Ad Above Download Buttons ── */}
-      <div className="mb-4" id="ad-download-top">
-        <IframeAdBanner id="ad-download-top-iframe" />
-      </div>
-
       <div className="grid gap-3">
         {formats.map((format, index) => {
           const Icon = getIcon(format);
@@ -146,11 +139,6 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
             </motion.button>
           );
         })}
-      </div>
-
-      {/* ── Ad Below Download Buttons ── */}
-      <div className="mt-5" id="ad-download-bottom">
-        <AdBanner />
       </div>
     </motion.div>
   );

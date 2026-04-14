@@ -47,6 +47,11 @@ const MainLayout = () => {
         <Outlet />
       </main>
 
+      {/* ── Footer Ad (above footer, every page) ── */}
+      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6" id="ad-footer-global">
+        <AdBanner />
+      </div>
+
       <Footer />
 
       {/* ── Sticky Bottom Mobile Ad ── */}
