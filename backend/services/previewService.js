@@ -3,10 +3,7 @@
 const { fetchMetadata } = require('../utils/ytdlp');
 const { enqueuePreview } = require('./concurrencyQueue');
 const logger = require('../utils/logger');
-
-/** Simple in-memory cache (no Redis needed) */
-const _cache = new Map();
-const CACHE_TTL = 300_000; // 5 minutes in ms
+const cache = require('./previewCache');
 
 /**
  * Normalise raw yt-dlp JSON metadata into a clean preview object for YouTube.
@@ -168,41 +165,22 @@ async function fetchInstagramData(url) {
  * @returns {Promise<object>}
  */
 async function getMediaPreview(url, platform) {
-  // Check cache first (before entering the queue)
-  const cached = _cache.get(url);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    logger.debug('[Preview] Cache hit');
-    return cached.data;
-  }
+  // Use the Cache Service for both TTL caching and active request deduplication
+  return cache.getOrFetch(url, async () => {
+    logger.debug(`[Preview] Queueing fresh metadata fetch for ${platform}`);
 
-  logger.debug(`[Preview] Fetching metadata for ${platform} (queued)`);
-
-  // Run through the concurrency-limited preview queue
-  return enqueuePreview(async () => {
-    // Double-check cache (another request may have populated it while we waited)
-    const cached2 = _cache.get(url);
-    if (cached2 && Date.now() - cached2.timestamp < CACHE_TTL) {
-      logger.debug('[Preview] Cache hit (after queue wait)');
-      return cached2.data;
-    }
-
-    try {
-      let preview;
-      if (platform === 'instagram') {
-        preview = await fetchInstagramData(url);
-      } else {
-        const raw = await fetchMetadata(url);
-        preview = normaliseYouTubeData(raw, url);
-      }
-
-      // Cache
-      _cache.set(url, { data: preview, timestamp: Date.now() });
-
-      // Auto-expire cache entries
-      setTimeout(() => _cache.delete(url), CACHE_TTL);
-
-      return preview;
-    } catch (err) {
+    // Run through the concurrency-limited preview queue
+    return enqueuePreview(async () => {
+      try {
+        let preview;
+        if (platform === 'instagram') {
+          preview = await fetchInstagramData(url);
+        } else {
+          const raw = await fetchMetadata(url);
+          preview = normaliseYouTubeData(raw, url);
+        }
+        return preview;
+      } catch (err) {
       if (err.isOperational) throw err;
       
       logger.error(`[Preview] yt-dlp / extractor failed: ${err.message}`);
@@ -269,7 +247,8 @@ async function getMediaPreview(url, platform) {
       error.code = 'FETCH_FAILED';
       error.isOperational = true;
       throw error;
-    }
+      }
+    });
   });
 }
 

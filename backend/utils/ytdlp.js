@@ -35,40 +35,44 @@ function baseArgs() {
     '--no-playlist',
     '--no-warnings',
     '--no-check-certificates',
+    '--geo-bypass', // Bypass geo-blocking if server is in a restricted region
+    
     // Realistic browser User-Agent — makes yt-dlp look like Chrome, not a script
     '--user-agent', config.ytdlp.userAgent,
+    
+    // Mimic official YouTube App + Web player clients to bypass bot detection
+    '--extractor-args', 'youtube:player_client=android,web,default',
+    
+    // Anti-Fingerprinting headers
+    '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    '--add-header', 'Accept-Language: en-US,en;q=0.5',
+    '--add-header', 'Sec-Fetch-Mode: navigate',
+    
     // Referer header — mimics navigation from YouTube itself
     '--referer', 'https://www.youtube.com/',
-    // Retry transient HTTP errors internally
-    '--extractor-retries', '3',
-    // Pace requests — sleep 1–3 seconds between sub-requests
-    '--sleep-interval', '1',
-    '--max-sleep-interval', '3',
+    
+    // Retry internal extraction errors
+    '--extractor-retries', '5',
+    
+    // Pace requests to avoid 429 errors — slightly more aggressive sleep for Stability
+    '--sleep-interval', '2',
+    '--max-sleep-interval', '5',
   ];
 
-  // ── FREE RATE LIMIT BYPASS (YouTube) ──────────────────────────────────
-  // Tells yt-dlp to pretend we are an official YouTube Mobile App (iOS/Android).
-  // YouTube rarely blocks mobile APIs compared to web browsers.
-  args.push('--extractor-args', 'youtube:player_client=ios,android,default');
-  
-  // Wait even longer if they do throttle us temporarily
-  args.push('--sleep-requests', '1');
+  // Wait if throttled
+  args.push('--sleep-requests', '2');
 
-  // ── Cookies file (the #1 most important fix) ────────────────────────────
-  // Without cookies, YouTube treats yt-dlp as an anonymous bot and aggressively
-  // rate-limits it (HTTP 429). With cookies from a logged-in browser session,
-  // YouTube sees a real user.
+  // Cookies are the MOST IMPORTANT part for anti-bot
+  // On Render, we recommend uploading a cookies.txt file
   if (config.ytdlp.cookiesPath && fs.existsSync(config.ytdlp.cookiesPath)) {
     args.push('--cookies', config.ytdlp.cookiesPath);
     logger.debug(`[yt-dlp] Using cookies from ${config.ytdlp.cookiesPath}`);
   }
 
-  // ── Proxy (optional) ───────────────────────────────────────────────────
   if (config.ytdlp.proxy) {
     args.push('--proxy', config.ytdlp.proxy);
   }
 
-  // ── Instagram-specific ─────────────────────────────────────────────────
   args.push('--extractor-args', 'instagram:compatible_formats');
 
   return args;
