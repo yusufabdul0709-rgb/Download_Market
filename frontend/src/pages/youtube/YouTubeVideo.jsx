@@ -10,6 +10,9 @@ import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
+import ToolFeatures from '../../components/ToolFeatures';
+import SEOHead from '../../components/SEOHead';
+import SEOFaq from '../../components/SEOFaq';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 import usePopunder from '../../hooks/usePopunder';
 
@@ -65,6 +68,11 @@ const YouTubeVideo = () => {
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
 
+        <SEOHead
+          title="YouTube Video Downloader - Download HD Videos Free"
+          description="Download YouTube videos in HD quality for free. No watermark, multiple formats (MP4, MP3). Save any YouTube video to your device instantly."
+        />
+
         {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -76,10 +84,10 @@ const YouTubeVideo = () => {
             YouTube Video Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download YouTube Videos
+            Download YouTube Videos in HD — Free & Fast
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            Paste a YouTube video URL to preview and download in your preferred quality.
+            Save YouTube videos in HD quality (360p to 1080p) or extract audio as MP3. No watermark, no signup.
           </p>
         </motion.div>
 
@@ -176,7 +184,14 @@ const YouTubeVideo = () => {
         {/* ═══ 7. How to Download Section ═══ */}
         <HowToDownload platform="YouTube Videos" />
 
-        {/* ═══ 8. Footer Ad ═══ */}
+        <ToolFeatures platform="YouTube Video Downloader" />
+
+        <div className="flex justify-center my-6" id="ad-before-faq">
+          <IframeAdBanner id="ad-yt-video-mid" />
+        </div>
+
+        <SEOFaq platform="YouTube Videos" />
+
         <div id="ad-footer" className="mt-8">
           <IframeAdBanner id="ad-yt-video-footer" />
         </div>

@@ -9,6 +9,9 @@ import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
+import ToolFeatures from '../../components/ToolFeatures';
+import SEOHead from '../../components/SEOHead';
+import SEOFaq from '../../components/SEOFaq';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 import usePopunder from '../../hooks/usePopunder';
 
@@ -61,6 +64,11 @@ const InstagramPost = () => {
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
 
+        <SEOHead
+          title="Instagram Post Downloader - Save Photos & Videos Free"
+          description="Download Instagram posts, photos and carousels in full quality. Save images and videos from Instagram for free. No watermark, no login required."
+        />
+
         {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -72,10 +80,10 @@ const InstagramPost = () => {
             Instagram Post Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download Instagram Posts
+            Download Instagram Posts — Photos & Videos Free
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            Save photos, carousels, and video posts from Instagram in full quality.
+            Save photos, carousels, and videos from Instagram posts in full HD quality. No watermark, no signup.
           </p>
         </motion.div>
 
@@ -167,7 +175,14 @@ const InstagramPost = () => {
         {/* ═══ 7. How to Download Section ═══ */}
         <HowToDownload platform="Instagram Posts" />
 
-        {/* ═══ 8. Footer Ad ═══ */}
+        <ToolFeatures platform="Instagram Post Downloader" />
+
+        <div className="flex justify-center my-6" id="ad-before-faq">
+          <IframeAdBanner id="ad-ig-post-mid" />
+        </div>
+
+        <SEOFaq platform="Instagram Posts" />
+
         <div id="ad-footer" className="mt-8">
           <IframeAdBanner id="ad-ig-post-footer" />
         </div>

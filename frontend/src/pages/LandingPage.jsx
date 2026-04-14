@@ -21,6 +21,8 @@ import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from '../component
 import URLInput from '../components/URLInput';
 import IframeAdBanner from '../components/IframeAdBanner';
 import HowToDownload from '../components/HowToDownload';
+import SEOHead from '../components/SEOHead';
+import SEOFaq from '../components/SEOFaq';
 import usePopunder from '../hooks/usePopunder';
 import { detectPlatform } from '../utils/helpers';
 
@@ -149,6 +151,10 @@ const LandingPage = () => {
 
   return (
     <div className="relative overflow-hidden">
+      <SEOHead
+        title="Free Video & Reels Downloader - YouTube & Instagram"
+        description="Download YouTube videos, shorts, Instagram reels, posts and audio for free in HD quality. No watermark, no signup required. Fast and safe online video downloader."
+      />
       {/* Background effects */}
       <div className="absolute inset-0 animated-gradient opacity-80" />
 
@@ -179,10 +185,8 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-text-primary"
           >
-            Download From{' '}
-            <span className="gradient-text">YouTube</span>
-            {' & '}
-            <span className="gradient-text-alt">Instagram</span>
+            Free <span className="gradient-text">Video</span> &{' '}
+            <span className="gradient-text-alt">Reels</span> Downloader
           </motion.h1>
 
           {/* Subtitle */}
@@ -190,8 +194,8 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed font-medium"
           >
-            Paste a URL, choose your quality, and download instantly.
-            Videos, Shorts, Reels, Posts, and Audio — all in one place.
+            Download videos from YouTube and Instagram for free. Save Reels, Shorts,
+            Posts, and audio in HD quality — no watermark, no signup.
           </motion.p>
 
           {/* URL Input */}
@@ -269,29 +273,37 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {platforms.map((platform, index) => (
-              <motion.div
-                key={platform.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Link
-                  to={platform.path}
-                  className={`group flex items-start gap-4 p-5 bg-white rounded-2xl border border-primary/10 ${platform.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+              <React.Fragment key={platform.name}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <div className={`w-12 h-12 ${platform.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                    <platform.icon size={22} className={platform.color} />
+                  <Link
+                    to={platform.path}
+                    className={`group flex items-start gap-4 p-5 bg-white rounded-2xl border border-primary/10 ${platform.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+                  >
+                    <div className={`w-12 h-12 ${platform.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <platform.icon size={22} className={platform.color} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-text-primary font-bold mb-1 flex items-center gap-2">
+                        {platform.name}
+                        <ChevronRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      </h3>
+                      <p className="text-text-secondary text-sm">{platform.description}</p>
+                    </div>
+                  </Link>
+                </motion.div>
+
+                {/* Inline ad after every 3rd card */}
+                {(index + 1) % 3 === 0 && index < platforms.length - 1 && (
+                  <div className="sm:col-span-2 lg:col-span-3 flex justify-center" id="ad-inline">
+                    <IframeAdBanner id={`ad-inline-${index}`} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-text-primary font-bold mb-1 flex items-center gap-2">
-                      {platform.name}
-                      <ChevronRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </h3>
-                    <p className="text-text-secondary text-sm">{platform.description}</p>
-                  </div>
-                </Link>
-              </motion.div>
+                )}
+              </React.Fragment>
             ))}
           </div>
         </div>
@@ -374,6 +386,13 @@ const LandingPage = () => {
               </Link>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* SEO FAQ */}
+      <section className="relative px-4 sm:px-6 z-10 pb-16">
+        <div className="max-w-6xl mx-auto">
+          <SEOFaq platform="YouTube & Instagram content" />
         </div>
       </section>
     </div>

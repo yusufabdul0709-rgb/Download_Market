@@ -8,6 +8,9 @@ import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
+import ToolFeatures from '../../components/ToolFeatures';
+import SEOHead from '../../components/SEOHead';
+import SEOFaq from '../../components/SEOFaq';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 import usePopunder from '../../hooks/usePopunder';
 import { formatDuration } from '../../utils/helpers';
@@ -75,6 +78,11 @@ const InstagramAudio = () => {
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
 
+        <SEOHead
+          title="Instagram Audio Extractor - Download Audio as MP3 Free"
+          description="Extract and download audio from Instagram Reels and videos as MP3 for free. High quality audio extraction. No watermark, no signup."
+        />
+
         {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -86,10 +94,10 @@ const InstagramAudio = () => {
             Instagram Audio Extractor
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Extract Instagram Audio
+            Extract Instagram Audio as MP3 — Free
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            Extract and download audio from Instagram Reels and videos as MP3.
+            Extract and download audio from Instagram Reels and videos as high quality MP3. No watermark, no signup.
           </p>
         </motion.div>
 
@@ -220,7 +228,14 @@ const InstagramAudio = () => {
         {/* ═══ 7. How to Download Section ═══ */}
         <HowToDownload platform="Instagram Audio" />
 
-        {/* ═══ 8. Footer Ad ═══ */}
+        <ToolFeatures platform="Instagram Audio Extractor" />
+
+        <div className="flex justify-center my-6" id="ad-before-faq">
+          <IframeAdBanner id="ad-ig-audio-mid" />
+        </div>
+
+        <SEOFaq platform="Instagram Audio" />
+
         <div id="ad-footer" className="mt-8">
           <IframeAdBanner id="ad-ig-audio-footer" />
         </div>

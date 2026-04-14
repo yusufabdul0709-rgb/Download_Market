@@ -10,6 +10,9 @@ import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
+import ToolFeatures from '../../components/ToolFeatures';
+import SEOHead from '../../components/SEOHead';
+import SEOFaq from '../../components/SEOFaq';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 import usePopunder from '../../hooks/usePopunder';
 
@@ -62,6 +65,11 @@ const YouTubeShorts = () => {
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
 
+        <SEOHead
+          title="YouTube Shorts Downloader - Save Shorts in HD Free"
+          description="Download YouTube Shorts in HD quality for free. Save vertical short videos to your phone or computer. No watermark, no signup required."
+        />
+
         {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -73,10 +81,10 @@ const YouTubeShorts = () => {
             YouTube Shorts Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download YouTube Shorts
+            Download YouTube Shorts in HD — Free & Fast
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            Save your favorite YouTube Shorts in high quality. Optimized for vertical content.
+            Save YouTube Shorts videos in HD quality. No watermark, works on all devices, completely free.
           </p>
         </motion.div>
 
@@ -175,7 +183,14 @@ const YouTubeShorts = () => {
         {/* ═══ 7. How to Download Section ═══ */}
         <HowToDownload platform="YouTube Shorts" />
 
-        {/* ═══ 8. Footer Ad ═══ */}
+        <ToolFeatures platform="YouTube Shorts Downloader" />
+
+        <div className="flex justify-center my-6" id="ad-before-faq">
+          <IframeAdBanner id="ad-yt-shorts-mid" />
+        </div>
+
+        <SEOFaq platform="YouTube Shorts" />
+
         <div id="ad-footer" className="mt-8">
           <IframeAdBanner id="ad-yt-shorts-footer" />
         </div>

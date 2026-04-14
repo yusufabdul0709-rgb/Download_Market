@@ -9,6 +9,9 @@ import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
+import ToolFeatures from '../../components/ToolFeatures';
+import SEOHead from '../../components/SEOHead';
+import SEOFaq from '../../components/SEOFaq';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
 import usePopunder from '../../hooks/usePopunder';
 
@@ -63,6 +66,11 @@ const InstagramReels = () => {
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
 
+        <SEOHead
+          title="Instagram Reels Downloader - Save Reels in HD Free"
+          description="Download Instagram Reels in HD quality for free. No watermark, no signup. Save any Instagram Reel video to your phone or computer instantly with Download Market."
+        />
+
         {/* ═══ 1. Title ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -74,10 +82,10 @@ const InstagramReels = () => {
             Instagram Reels Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download Instagram Reels
+            Download Instagram Reels in HD — Free & Fast
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            Save Instagram Reels in full quality. Vertical video optimized.
+            Save any Instagram Reel to your device in full HD quality. No watermark, no signup, works on all devices.
           </p>
         </motion.div>
 
@@ -175,6 +183,17 @@ const InstagramReels = () => {
 
         {/* ═══ 7. How to Download Section ═══ */}
         <HowToDownload platform="Instagram Reels" />
+
+        {/* ═══ Features ═══ */}
+        <ToolFeatures platform="Instagram Reels Downloader" />
+
+        {/* ═══ Inline Ad between features and FAQ ═══ */}
+        <div className="flex justify-center my-6" id="ad-before-faq">
+          <IframeAdBanner id="ad-ig-reels-mid" />
+        </div>
+
+        {/* ═══ FAQ ═══ */}
+        <SEOFaq platform="Instagram Reels" />
 
         {/* ═══ 8. Footer Ad ═══ */}
         <div id="ad-footer" className="mt-8">

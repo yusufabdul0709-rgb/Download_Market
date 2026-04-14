@@ -32,11 +32,16 @@ const MainLayout = () => {
       <Navbar />
 
       <main className="flex-1 pt-20">
+        {/* ── #ad-top — Top Banner Ad (below navbar, above the fold) ── */}
+        <div className="w-full flex justify-center py-3 bg-white/50 border-b border-primary/5" id="ad-top">
+          <IframeAdBanner id="ad-top-banner" />
+        </div>
+
         <Outlet />
       </main>
 
-      {/* ── Clean Footer Ad (global, small iframe banner) ── */}
-      <div className="w-full flex justify-center py-4" id="ad-footer-global">
+      {/* ── #ad-footer — Footer Ad (above footer, every page) ── */}
+      <div className="w-full flex justify-center py-4" id="ad-footer">
         <IframeAdBanner id="ad-footer-global-iframe" />
       </div>
 
