@@ -12,8 +12,8 @@ const SEOFaq = ({ platform = 'Downloads', items = [] }) => {
       answer: 'Yes! Download Market is 100% free. No sign-up, no subscription, and no hidden charges. Just paste your link and download.',
     },
     {
-      question: 'Do I need login?',
-      answer: 'No, you do not need to create an account or provide any personal information. You can use our downloader instantly without logging in.',
+      question: 'Works on mobile?',
+      answer: 'Yes, our downloader works perfectly on all devices including Android, iPhone, iPad, and desktop without any app installation.',
     },
     {
       question: 'Is it safe?',

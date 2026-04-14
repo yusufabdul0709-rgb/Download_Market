@@ -194,7 +194,7 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-text-primary"
           >
-            Free <span className="gradient-text-alt">Instagram</span> Video & Reels Downloader
+            Download <span className="gradient-text-alt">Instagram Reels</span> in HD Free
           </motion.h1>
 
           {/* Subtitle */}
@@ -202,12 +202,11 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed font-medium"
           >
-            Download videos from YouTube and Instagram for free. Save Reels, Shorts,
-            Posts, and audio in HD quality — no watermark, no signup.
+            Download your favorite Instagram Reels, Photos, and Videos in high quality. Fast, free, and no watermark.
           </motion.p>
 
           {/* URL Input */}
-          <motion.div variants={itemVariants} className="mb-8">
+          <motion.div variants={itemVariants} className="mb-6">
             <URLInput
               value={url}
               onChange={setUrl}
@@ -217,41 +216,11 @@ const LandingPage = () => {
             />
           </motion.div>
 
-          {/* CTA buttons */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-wrap items-center justify-center gap-4 mb-12"
-          >
-            <Link
-              to="/youtube/video"
-              className="flex items-center gap-2 px-6 py-3 bg-white text-youtube border border-youtube/20 rounded-2xl font-semibold text-sm hover:bg-youtube/5 hover:border-youtube/40 hover:shadow-md transition-all duration-300"
-              id="cta-youtube"
-            >
-              <Youtube size={18} />
-              YouTube Downloader
-            </Link>
-            <Link
-              to="/instagram/reels"
-              className="flex items-center gap-2 px-6 py-3 bg-white text-instagram border border-instagram/20 rounded-2xl font-semibold text-sm hover:bg-instagram/5 hover:border-instagram/40 hover:shadow-md transition-all duration-300"
-              id="cta-instagram"
-            >
-              <Instagram size={18} />
-              Instagram Downloader
-            </Link>
+          {/* Inline ad after input */}
+          <motion.div variants={itemVariants} className="mb-10 w-full flex justify-center">
+            <IframeAdBanner id="ad-landing-hero-inline" />
           </motion.div>
 
-          {/* Stats */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center justify-center gap-8 sm:gap-12"
-          >
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{stat.value}</p>
-                <p className="text-text-secondary text-sm mt-1 font-medium">{stat.label}</p>
-              </div>
-            ))}
-          </motion.div>
         </motion.div>
       </section>
 
@@ -269,14 +238,11 @@ const LandingPage = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-8"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-text-primary mb-4">
-              All Your <span className="gradient-text">Downloads</span> in One Place
+            <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-2">
+              Select a <span className="gradient-text">Downloader Tool</span>
             </h2>
-            <p className="text-text-secondary max-w-lg mx-auto font-medium">
-              Choose a platform and start downloading your favorite content instantly.
-            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -356,51 +322,16 @@ const LandingPage = () => {
       </section>
 
       {/* How to Download */}
-      <section className="relative px-4 sm:px-6 z-10">
-        <div className="max-w-6xl mx-auto">
-          <HowToDownload platform="Videos & Media" />
-        </div>
-      </section>
-
-      {/* Ad before final CTA */}
-      <section className="relative py-4 px-4 sm:px-6 z-10">
-        <div className="max-w-4xl mx-auto flex justify-center">
-          <IframeAdBanner id="ad-landing-pre-cta" />
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
       <section className="relative py-16 px-4 sm:px-6 z-10">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="glass-strong rounded-3xl p-8 sm:p-12 shadow-2xl shadow-primary/10"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-text-primary mb-4">
-              Ready to Download?
-            </h2>
-            <p className="text-text-secondary mb-8 max-w-lg mx-auto font-medium">
-              Start downloading your favorite videos and media content now. It's free, fast, and always will be.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link
-                to="/youtube/video"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-accent hover:from-primary-dark hover:to-accent-dark text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-1"
-              >
-                <Download size={20} />
-                Get Started
-              </Link>
-            </div>
-          </motion.div>
+        <div className="max-w-6xl mx-auto">
+          <HowToDownload platform="Instagram & Media" />
         </div>
       </section>
 
       {/* SEO FAQ */}
-      <section className="relative px-4 sm:px-6 z-10 pb-16">
+      <section className="relative py-16 px-4 sm:px-6 z-10 pb-24 bg-slate-50/50 border-t border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <SEOFaq platform="YouTube & Instagram content" />
+          <SEOFaq platform="Free Downloader" />
         </div>
       </section>
     </div>

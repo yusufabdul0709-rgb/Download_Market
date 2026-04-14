@@ -5,49 +5,27 @@ import { useEffect, useRef } from 'react';
  * Injects the atOptions config + invoke.js script dynamically.
  * Scales down responsively on smaller screens via CSS transform.
  */
-const IframeAdBanner = ({ id = 'ad-banner', className = '' }) => {
-  const containerRef = useRef(null);
-  const injectedRef = useRef(false);
-
-  useEffect(() => {
-    if (!containerRef.current || injectedRef.current) return;
-    injectedRef.current = true;
-
-    // Inject the atOptions config script
-    const configScript = document.createElement('script');
-    configScript.type = 'text/javascript';
-    configScript.textContent = `
-      atOptions = {
-        'key' : 'cb270c0ac9bbab8c47134da31a43b888',
-        'format' : 'iframe',
-        'height' : 60,
-        'width' : 468,
-        'params' : {}
-      };
-    `;
-
-    // Inject the invoke script
-    const invokeScript = document.createElement('script');
-    invokeScript.type = 'text/javascript';
-    invokeScript.src = 'https://www.highperformanceformat.com/cb270c0ac9bbab8c47134da31a43b888/invoke.js';
-
-    containerRef.current.appendChild(configScript);
-    containerRef.current.appendChild(invokeScript);
-
-    return () => {
-      injectedRef.current = false;
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
-    };
-  }, []);
-
+const IframeAdBanner = ({ id = 'ad-banner', className = '', width = 468, height = 60 }) => {
   return (
     <div
       id={id}
-      className={`ad-iframe-wrapper flex justify-center ${className}`}
+      className={`ad-iframe-wrapper flex justify-center items-center overflow-hidden ${className}`}
+      style={{ minHeight: `${height}px` }}
     >
-      <div ref={containerRef} className="ad-iframe-inner" />
+      <iframe
+        src="/adsterra.html"
+        width={width}
+        height={height}
+        frameBorder="0"
+        scrolling="no"
+        title="Advertisement"
+        className="max-w-full"
+        style={{
+          border: 'none',
+          overflow: 'hidden',
+          display: 'block'
+        }}
+      />
     </div>
   );
 };

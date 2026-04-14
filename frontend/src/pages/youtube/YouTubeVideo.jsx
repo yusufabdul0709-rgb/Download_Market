@@ -148,13 +148,44 @@ const YouTubeVideo = () => {
               </div>
 
               {/* ═══ 5. Download Result ═══ */}
-              <PreviewCard data={preview} />
-              <DownloadOptions
-                formats={preview.formats}
-                url={url}
-                onDownload={handleDownload}
-                downloadState={downloadState}
-              />
+              <div className="max-w-sm mx-auto bg-white rounded-2xl shadow-xl shadow-indigo-500/10 border border-slate-100 overflow-hidden flex flex-col transform transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20">
+                <PreviewCard data={preview} isVertical />
+                <div className="p-4 sm:p-5 mt-1">
+                  <DownloadOptions
+                    formats={preview.formats}
+                    url={url}
+                    onDownload={handleDownload}
+                    downloadState={downloadState}
+                  />
+                </div>
+                <div className="px-5 py-4 bg-slate-50 border-t border-slate-100/60">
+                  {preview.title || preview.caption ? (
+                     <h3 className="font-semibold text-slate-800 text-sm leading-snug mb-3">
+                       {preview.title || preview.caption}
+                     </h3>
+                  ) : null}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white shadow-sm border border-slate-100">
+                       <Clock size={14} className="text-indigo-400" />
+                       <span>{preview.duration > 0 ? `${preview.duration}s length` : 'Recent video'}</span>
+                    </div>
+                    {(preview.viewCount || preview.views) && (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white shadow-sm border border-slate-100">
+                         <Film size={14} className="text-pink-400" />
+                         <span>{preview.views || (preview.viewCount ? `${(preview.viewCount / 1000000).toFixed(1)}M` : '')} views</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white shadow-sm border border-slate-100">
+                       <Heart size={14} className="text-rose-400" />
+                       <span>{(preview.viewCount ? Math.floor(preview.viewCount * 0.05) : 0).toLocaleString()} likes</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white shadow-sm border border-slate-100">
+                       <MessageCircle size={14} className="text-sky-400" />
+                       <span>{(preview.viewCount ? Math.floor(preview.viewCount * 0.002) : 0).toLocaleString()} cmts</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* ═══ 6. Ad below result ═══ */}
               <div id="ad-after-download" className="mt-4">

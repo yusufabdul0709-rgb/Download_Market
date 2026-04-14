@@ -57,89 +57,78 @@ const DownloadOptions = ({ formats = [], url = '', onDownload, downloadState = {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
-      className="w-full"
+      className="w-full flex flex-col items-center"
     >
-      <h4 className="text-text-primary font-semibold text-lg mb-4 flex items-center gap-2">
-        <Download size={20} className="text-primary" />
-        Download Options
-      </h4>
-
       {/* Download error */}
       {downloadState.error && (
-        <div className="mb-4 p-3 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm">
+        <div className="w-full mb-4 p-3 rounded-xl bg-danger/10 text-danger text-sm text-center">
           {downloadState.error}
         </div>
       )}
 
       {/* Progress bar and Message when downloading */}
       {isAnyDownloading && (
-        <div className="mb-4">
-          <div className="flex justify-between text-xs text-text-muted mb-1.5">
+        <div className="w-full mb-4">
+          <div className="flex justify-between text-xs text-text-muted mb-1.5 font-medium">
             <span className="animate-pulse">{loadingText}</span>
             <span>{Math.round(downloadState.progress || 0)}%</span>
           </div>
-          <div className="w-full h-2 bg-bg-surface-lighter rounded-full overflow-hidden shadow-inner">
+          <div className="h-2 bg-black/5 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${downloadState.progress || 0}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ width: `${Math.round(downloadState.progress || 0)}%` }}
+              className="h-full bg-gradient-to-r from-[#4F46E5] to-[#7C3AED]"
             />
           </div>
         </div>
       )}
 
-      <div className="grid gap-3">
-        {formats.map((format, index) => {
-          const Icon = getIcon(format);
-          const isDownloading = isFormatActive(format);
-          const isDisabled = isAnyDownloading && !isDownloading;
+      {/* ── Massive Primary Button (Best Format) ── */}
+      <button
+        onClick={() => handleDownload(formats[0])}
+        disabled={isAnyDownloading}
+        className="w-full relative shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 rounded-xl overflow-hidden group disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] group-hover:scale-[1.02] transition-transform duration-300" />
+        <div className="relative px-6 py-4 sm:py-5 flex items-center justify-center gap-3">
+          {isFormatActive(formats[0]) ? (
+            <Loader2 size={24} className="text-white animate-spin" />
+          ) : (
+            <Download size={24} className="text-white" />
+          )}
+          <span className="text-white font-bold text-lg sm:text-xl tracking-wide">
+            {isFormatActive(formats[0]) ? 'Downloading...' : 'Download'}
+          </span>
+        </div>
+      </button>
 
-          return (
-            <motion.button
-              key={`${format.quality || format.formatId}-${format.format}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.08 }}
-              onClick={() => handleDownload(format)}
-              disabled={isDownloading || isDisabled}
-              className={`flex items-center justify-between p-4 glass rounded-xl transition-all duration-300 group cursor-pointer
-                ${isDownloading ? 'ring-2 ring-primary/40 bg-primary/5' : ''}
-                ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-primary/5 hover:shadow-md'}
-              `}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm
-                  ${isDownloading ? 'bg-primary text-white' : 'bg-white text-primary group-hover:bg-primary group-hover:text-white'}`}
-                >
-                  <Icon size={20} className={isDownloading ? 'text-white' : 'text-primary group-hover:text-white'} />
-                </div>
-                <div className="text-left">
-                  <p className={`font-semibold ${getQualityColor(format.quality)}`}>
-                    {format.label || format.quality}
-                  </p>
-                  <p className="text-text-muted text-sm">
-                    {(format.format || 'mp4').toUpperCase()}
-                    {format.size ? ` • ${formatFileSize(format.size)}` : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {isDownloading ? (
-                  <div className="flex items-center gap-2 text-secondary">
-                    <Loader2 size={20} className="animate-spin" />
-                    <span className="text-sm hidden sm:inline font-medium">Processing...</span>
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                    <Download size={18} className="text-primary group-hover:text-white" />
-                  </div>
-                )}
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
+      {/* ── Secondary Quality Options (If any) ── */}
+      {formats.length > 1 && (
+        <div className="w-full mt-4 flex flex-wrap justify-center gap-2">
+          {formats.slice(1).map((format, idx) => {
+            const Icon = getIcon(format);
+            const isActive = isFormatActive(format);
+            const isDownloadingThis = isActive && isAnyDownloading;
+            
+            return (
+              <button
+                key={idx}
+                onClick={() => handleDownload(format)}
+                disabled={isAnyDownloading}
+                className={`py-2 px-4 rounded-lg font-medium text-sm border transition-all duration-300 flex items-center gap-2 ${
+                  isDownloadingThis 
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-600' 
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600 shadow-sm'
+                } ${isAnyDownloading && !isDownloadingThis ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isDownloadingThis ? <Loader2 size={16} className="animate-spin" /> : <Icon size={16} />}
+                {format.label || format.quality || format.formatId}
+                {format.size && <span className="opacity-60 hidden sm:inline ml-1">• {formatFileSize(format.size)}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 };
