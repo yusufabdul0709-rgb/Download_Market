@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Clock, User } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import IframeAdBanner from '../../components/IframeAdBanner';
-import AdBanner from '../../components/AdBanner';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
+import usePopunder from '../../hooks/usePopunder';
 import { formatDuration } from '../../utils/helpers';
 
 const InstagramAudio = () => {
@@ -24,6 +24,7 @@ const InstagramAudio = () => {
     startFormatDownload,
     resetAll,
   } = useDownloadMedia();
+  const triggerPopunder = usePopunder();
 
   useEffect(() => {
     if (location.state?.url) {
@@ -40,6 +41,15 @@ const InstagramAudio = () => {
   const handleUrlChange = (newUrl) => {
     setUrl(newUrl);
     if (!newUrl.trim()) resetAll();
+  };
+
+  const handleDownload = (downloadUrl, format) => {
+    const adFired = triggerPopunder();
+    if (adFired) {
+      setTimeout(() => startFormatDownload(downloadUrl, format), 2000);
+    } else {
+      startFormatDownload(downloadUrl, format);
+    }
   };
 
   // Build audio-only formats from preview data
@@ -131,7 +141,7 @@ const InstagramAudio = () => {
               className="space-y-6"
             >
               <div id="ad-download-top" className="mb-2">
-                <AdBanner />
+                <IframeAdBanner id="ad-ig-audio-pre-result" />
               </div>
 
               {/* ═══ 5. Download Result ═══ */}
@@ -178,7 +188,7 @@ const InstagramAudio = () => {
               <DownloadOptions
                 formats={audioFormats.length > 0 ? audioFormats : preview.formats}
                 url={url}
-                onDownload={startFormatDownload}
+                onDownload={handleDownload}
                 downloadState={downloadState}
               />
 

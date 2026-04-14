@@ -3,8 +3,6 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import IframeAdBanner from '../components/IframeAdBanner';
-import AdBanner from '../components/AdBanner';
-import AdPlaceholder from '../components/AdPlaceholder';
 
 const MainLayout = () => {
   return (
@@ -31,25 +29,15 @@ const MainLayout = () => {
         }}
       />
 
-      {/* ── Top Banner Ad (above the fold) ── */}
-      <div className="ad-top-bar" id="ad-top">
-        <IframeAdBanner id="ad-top-iframe" />
-      </div>
-
       <Navbar />
-
-      {/* ── Desktop Sidebar Ad (right gutter, only on wide screens) ── */}
-      <div className="ad-sidebar-rail right" id="ad-sidebar">
-        <AdBanner />
-      </div>
 
       <main className="flex-1 pt-20">
         <Outlet />
       </main>
 
-      {/* ── Footer Ad (above footer, every page) ── */}
-      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6" id="ad-footer-global">
-        <AdBanner />
+      {/* ── Clean Footer Ad (global, small iframe banner) ── */}
+      <div className="w-full flex justify-center py-4" id="ad-footer-global">
+        <IframeAdBanner id="ad-footer-global-iframe" />
       </div>
 
       <Footer />

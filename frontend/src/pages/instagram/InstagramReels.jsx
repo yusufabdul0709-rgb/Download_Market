@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Film } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import IframeAdBanner from '../../components/IframeAdBanner';
-import AdBanner from '../../components/AdBanner';
 import PreviewCard from '../../components/PreviewCard';
 import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
 import useDownloadMedia from '../../hooks/useDownloadMedia';
+import usePopunder from '../../hooks/usePopunder';
 
 const InstagramReels = () => {
   const [url, setUrl] = useState('');
@@ -25,6 +25,7 @@ const InstagramReels = () => {
     startFormatDownload,
     resetAll,
   } = useDownloadMedia();
+  const triggerPopunder = usePopunder();
 
   useEffect(() => {
     if (location.state?.url) {
@@ -41,6 +42,17 @@ const InstagramReels = () => {
   const handleUrlChange = (newUrl) => {
     setUrl(newUrl);
     if (!newUrl.trim()) resetAll();
+  };
+
+  // On Download click: ad fires first, then download starts
+  const handleDownload = (downloadUrl, format) => {
+    const adFired = triggerPopunder();
+    if (adFired) {
+      // Delay download so ad redirect opens first
+      setTimeout(() => startFormatDownload(downloadUrl, format), 2000);
+    } else {
+      startFormatDownload(downloadUrl, format);
+    }
   };
 
   return (
@@ -122,7 +134,7 @@ const InstagramReels = () => {
               className="space-y-6"
             >
               <div id="ad-download-top" className="mb-2">
-                <AdBanner />
+                <IframeAdBanner id="ad-ig-reels-pre-result" />
               </div>
 
               {/* ═══ 5. Download Result ═══ */}
@@ -131,7 +143,7 @@ const InstagramReels = () => {
                 <DownloadOptions
                   formats={preview.formats}
                   url={url}
-                  onDownload={startFormatDownload}
+                  onDownload={handleDownload}
                   downloadState={downloadState}
                 />
               </div>

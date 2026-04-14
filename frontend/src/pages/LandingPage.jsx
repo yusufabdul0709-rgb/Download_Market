@@ -19,8 +19,9 @@ import {
 } from 'lucide-react';
 import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from '../components/BrandIcons';
 import URLInput from '../components/URLInput';
-import AdBanner from '../components/AdBanner';
 import IframeAdBanner from '../components/IframeAdBanner';
+import HowToDownload from '../components/HowToDownload';
+import usePopunder from '../hooks/usePopunder';
 import { detectPlatform } from '../utils/helpers';
 
 const features = [
@@ -34,7 +35,7 @@ const features = [
   {
     icon: Shield,
     title: 'Safe & Private',
-    description: 'No tracking, no ads, no history stored. Your privacy comes first.',
+    description: 'No tracking, no history stored. Your privacy comes first.',
     color: 'text-success',
     bg: 'bg-success/10',
   },
@@ -111,8 +112,12 @@ const stats = [
 const LandingPage = () => {
   const [url, setUrl] = useState('');
   const navigate = useNavigate();
+  const triggerPopunder = usePopunder();
 
   const handleSubmit = (inputUrl) => {
+    // Trigger popunder on first real user action
+    triggerPopunder();
+
     const platform = detectPlatform(inputUrl);
     if (platform === 'youtube-shorts') {
       navigate('/youtube/shorts', { state: { url: inputUrl } });
@@ -125,7 +130,6 @@ const LandingPage = () => {
     } else if (platform?.includes('instagram')) {
       navigate('/instagram/reels', { state: { url: inputUrl } });
     } else {
-      // Default to YouTube video
       navigate('/youtube/video', { state: { url: inputUrl } });
     }
   };
@@ -147,7 +151,7 @@ const LandingPage = () => {
     <div className="relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 animated-gradient opacity-80" />
-      
+
       {/* Decorative blobs */}
       <div className="blob-pink top-[-100px] right-[-100px]" />
       <div className="blob-blue bottom-[-100px] left-[-100px]" />
@@ -201,9 +205,6 @@ const LandingPage = () => {
             />
           </motion.div>
 
-          {/* Adsterra Iframe Banner - High visibility hero zone */}
-          <IframeAdBanner id="ad-hero-inline" className="my-4" />
-
           {/* CTA buttons */}
           <motion.div
             variants={itemVariants}
@@ -242,8 +243,15 @@ const LandingPage = () => {
         </motion.div>
       </section>
 
+      {/* Clean Iframe Ad — between hero and platforms */}
+      <section className="relative py-4 px-4 sm:px-6 z-10">
+        <div className="max-w-4xl mx-auto flex justify-center">
+          <IframeAdBanner id="ad-landing-mid" />
+        </div>
+      </section>
+
       {/* Platform Cards */}
-      <section className="relative py-20 px-4 sm:px-6 z-10">
+      <section className="relative py-16 px-4 sm:px-6 z-10">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -261,52 +269,36 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {platforms.map((platform, index) => (
-              <React.Fragment key={platform.name}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
+              <motion.div
+                key={platform.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Link
+                  to={platform.path}
+                  className={`group flex items-start gap-4 p-5 bg-white rounded-2xl border border-primary/10 ${platform.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
                 >
-                  <Link
-                    to={platform.path}
-                    className={`group flex items-start gap-4 p-5 bg-white rounded-2xl border border-primary/10 ${platform.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
-                  >
-                    <div className={`w-12 h-12 ${platform.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                      <platform.icon size={22} className={platform.color} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-text-primary font-bold mb-1 flex items-center gap-2">
-                        {platform.name}
-                        <ChevronRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      </h3>
-                      <p className="text-text-secondary text-sm">{platform.description}</p>
-                    </div>
-                  </Link>
-                </motion.div>
-
-                {/* Inline Ad after every 3rd card */}
-                {(index + 1) % 3 === 0 && index < platforms.length - 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="sm:col-span-2 lg:col-span-3"
-                    id="ad-inline"
-                  >
-                    <div className="bg-white rounded-2xl border border-primary/10 p-4 flex justify-center">
-                      <IframeAdBanner id="ad-inline-iframe" />
-                    </div>
-                  </motion.div>
-                )}
-              </React.Fragment>
+                  <div className={`w-12 h-12 ${platform.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <platform.icon size={22} className={platform.color} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-text-primary font-bold mb-1 flex items-center gap-2">
+                      {platform.name}
+                      <ChevronRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    </h3>
+                    <p className="text-text-secondary text-sm">{platform.description}</p>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="relative py-20 px-4 sm:px-6 z-10">
+      <section className="relative py-16 px-4 sm:px-6 z-10">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -343,15 +335,22 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Ad between features and CTA */}
-      <section className="relative py-6 px-4 sm:px-6 z-10">
+      {/* How to Download */}
+      <section className="relative px-4 sm:px-6 z-10">
+        <div className="max-w-6xl mx-auto">
+          <HowToDownload platform="Videos & Media" />
+        </div>
+      </section>
+
+      {/* Ad before final CTA */}
+      <section className="relative py-4 px-4 sm:px-6 z-10">
         <div className="max-w-4xl mx-auto flex justify-center">
-          <AdBanner />
+          <IframeAdBanner id="ad-landing-pre-cta" />
         </div>
       </section>
 
       {/* Bottom CTA */}
-      <section className="relative py-20 px-4 sm:px-6 z-10">
+      <section className="relative py-16 px-4 sm:px-6 z-10">
         <div className="max-w-3xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
