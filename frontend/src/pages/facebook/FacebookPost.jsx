@@ -65,8 +65,8 @@ const FacebookPost = () => {
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 z-10">
 
         <SEOHead
-          title="Facebook Video Downloader - Download FB Videos HD Free"
-          description="Download Facebook videos and posts in HD quality for free. Secure online downloader for Facebook content. No watermark, fast and easy."
+          title="Facebook Post Downloader - Download FB Posts HD Free"
+          description="Download Facebook posts and images/videos in HD quality for free. Secure online downloader for Facebook content. No watermark, fast and easy."
         />
 
         {/* ═══ Title ═══ */}
@@ -77,13 +77,13 @@ const FacebookPost = () => {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-200 rounded-full text-blue-600 text-sm font-medium mb-4 shadow-sm">
             <Video size={18} />
-            Facebook Video Downloader
+            Facebook Post Downloader
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">
-            Download <span className="text-blue-600 font-extrabold">Facebook Videos</span> in HD
+            Download <span className="text-blue-600 font-extrabold">Facebook Posts</span> in HD
           </h1>
           <p className="text-text-secondary font-medium max-w-lg mx-auto">
-            The easiest way to save Facebook videos directly to your device. Support for both public and private video links.
+            The easiest way to save Facebook posts directly to your device. Support for both public and private post links.
           </p>
         </motion.div>
 
@@ -99,8 +99,8 @@ const FacebookPost = () => {
             onChange={handleUrlChange}
             onSubmit={handleFetch}
             loading={previewLoading}
-            placeholder="Paste Facebook Video URL here..."
-            id="facebook-video-url-input"
+            placeholder="Paste Facebook Post URL here..."
+            id="facebook-post-url-input"
           />
         </motion.div>
 
@@ -160,9 +160,9 @@ const FacebookPost = () => {
           </div>
         )}
 
-        <HowToDownload platform="Facebook Videos" />
-        <ToolFeatures platform="Facebook Downloader" />
-        <SEOFaq platform="Facebook Videos" />
+        <HowToDownload platform="Facebook Posts" />
+        <ToolFeatures platform="Facebook Post Downloader" />
+        <SEOFaq platform="Facebook Posts" />
       </div>
     </div>
   );

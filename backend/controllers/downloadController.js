@@ -10,7 +10,7 @@ const { createJob, getJob, updateJob } = require('../services/jobStore');
 const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
-const { buildDownloadArgs, parseProgress, fetchMetadata } = require('../utils/ytdlp');
+const { buildDownloadArgs, parseProgress, fetchMetadata, normaliseMediaUrl } = require('../utils/ytdlp');
 const axios = require('axios');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
@@ -249,7 +249,8 @@ async function processInstagramJob(jobId, job) {
  * Handle Facebook specific logic using yt-dlp.
  */
 async function processFacebookJob(jobId, job) {
-  const { url, type } = job;
+  const { url: originalUrl, type } = job;
+  const url = await normaliseMediaUrl(originalUrl);
   const outBase = path.join(TEMP_DIR, jobId);
 
   let metadata;

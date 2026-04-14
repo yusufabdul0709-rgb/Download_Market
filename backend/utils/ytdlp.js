@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const axios = require('axios');
 const config = require('../config');
 const logger = require('./logger');
 const { retryWithBackoff, isRetryableError } = require('./retryHelper');
@@ -81,29 +82,48 @@ function baseArgs() {
 // ── URL normalisation ─────────────────────────────────────────────────────────
 
 /**
- * Normalise YouTube Shorts URLs to standard /watch?v= format.
- * Shorts URLs sometimes cause extraction issues on certain yt-dlp versions.
+ * Normalise media URLs before passing to yt-dlp
+ * Unrolls Facebook share links and fixes YouTube Shorts.
  *
  * @param {string} url
- * @returns {string}
+ * @returns {Promise<string>}
  */
-function normaliseYouTubeUrl(url) {
+async function normaliseMediaUrl(url) {
   try {
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();
 
-    // Only touch YouTube domains
-    if (!hostname.includes('youtube.com') && !hostname.includes('youtu.be')) {
-      return url;
+    // Fix YouTube Shorts
+    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+      const shortsMatch = parsed.pathname.match(/^\/shorts\/([a-zA-Z0-9_-]+)/);
+      if (shortsMatch) {
+        const videoId = shortsMatch[1];
+        const normalised = `https://www.youtube.com/watch?v=${videoId}`;
+        logger.debug(`[yt-dlp] Normalised Shorts URL: ${url} → ${normalised}`);
+        return normalised;
+      }
     }
 
-    // Convert /shorts/VIDEO_ID → /watch?v=VIDEO_ID
-    const shortsMatch = parsed.pathname.match(/^\/shorts\/([a-zA-Z0-9_-]+)/);
-    if (shortsMatch) {
-      const videoId = shortsMatch[1];
-      const normalised = `https://www.youtube.com/watch?v=${videoId}`;
-      logger.debug(`[yt-dlp] Normalised Shorts URL: ${url} → ${normalised}`);
-      return normalised;
+    // Unroll Facebook Share links
+    if (hostname.includes('facebook.com') && parsed.pathname.startsWith('/share/')) {
+      try {
+        const res = await axios.get(url, {
+          maxRedirects: 10,
+          headers: {
+            'User-Agent': config.ytdlp.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Sec-Fetch-Mode': 'navigate'
+          }
+        });
+        if (res.request?.res?.responseUrl && res.request.res.responseUrl !== url) {
+           logger.debug(`[yt-dlp] Unrolled FB Share: ${url} → ${res.request.res.responseUrl}`);
+           return res.request.res.responseUrl;
+        }
+      } catch (err) {
+        // Ignore unroll errors
+        logger.debug(`[yt-dlp] Failed to unroll FB share link: ${err.message}`);
+      }
     }
 
     return url;
@@ -184,7 +204,7 @@ function runYtdlp(args, { timeoutMs = 120_000, onStderr } = {}) {
  * @returns {Promise<object>}
  */
 async function fetchMetadata(url) {
-  const normalisedUrl = normaliseYouTubeUrl(url);
+  const normalisedUrl = await normaliseMediaUrl(url);
 
   return retryWithBackoff(
     async () => {
@@ -223,8 +243,8 @@ async function fetchMetadata(url) {
  * @param {string}  [opts.formatId] explicit format id
  * @param {string}  opts.outPath    output template (yt-dlp -o)
  */
-function buildDownloadArgs({ url, type, formatId, outPath }) {
-  const normalisedUrl = normaliseYouTubeUrl(url);
+async function buildDownloadArgs({ url, type, formatId, outPath }) {
+  const normalisedUrl = await normaliseMediaUrl(url);
 
   const args = [
     ...baseArgs(),
@@ -260,4 +280,4 @@ function parseProgress(line) {
   return null;
 }
 
-module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress, normaliseYouTubeUrl };
+module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress, normaliseMediaUrl };

@@ -97,6 +97,7 @@ export const detectPlatform = (url) => {
   }
   if (trimmed.includes('facebook.com') || trimmed.includes('fb.watch')) {
     if (trimmed.includes('/reel/') || trimmed.includes('/reels/')) return 'facebook-reels';
+    if (trimmed.includes('/posts/') || trimmed.includes('/status/') || trimmed.includes('/photo')) return 'facebook-post';
     return 'facebook';
   }
   return null;
@@ -116,6 +117,7 @@ export const getPlatformInfo = (url) => {
     'instagram-post': { name: 'Instagram Post', type: 'post', platform: 'instagram' },
     instagram: { name: 'Instagram', type: 'reel', platform: 'instagram' },
     'facebook-reels': { name: 'Facebook Reels', type: 'reel', platform: 'facebook' },
+    'facebook-post': { name: 'Facebook Post', type: 'post', platform: 'facebook' },
     facebook: { name: 'Facebook', type: 'video', platform: 'facebook' },
   };
 

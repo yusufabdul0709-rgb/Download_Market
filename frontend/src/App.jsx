@@ -18,7 +18,7 @@ function App() {
         <Route path="/instagram/post" element={<InstagramPost />} />
         <Route path="/instagram/audio" element={<InstagramAudio />} />
         <Route path="/facebook/reels" element={<FacebookReels />} />
-        <Route path="/facebook/video" element={<FacebookPost />} />
+        <Route path="/facebook/post" element={<FacebookPost />} />
         <Route path="/facebook/audio" element={<FacebookAudio />} />
         {/* Catch-all 404 route */}
         <Route path="*" element={<NotFound />} />

@@ -68,13 +68,13 @@ const platforms = [
     description: 'Download Facebook Reels in high quality',
   },
   {
-    name: 'Facebook Video',
-    icon: Video,
-    path: '/facebook/video',
+    name: 'Facebook Posts',
+    icon: Image,
+    path: '/facebook/post',
     color: 'text-blue-600',
     bg: 'bg-blue-50',
     borderColor: 'hover:border-blue-300',
-    description: 'Save Facebook videos to your device',
+    description: 'Save Facebook posts to your device',
   },
   {
     name: 'Facebook Audio',
@@ -128,7 +128,9 @@ const LandingPage = () => {
   const handleSubmit = (inputUrl) => {
     triggerPopunder();
     const plat = detectPlatform(inputUrl);
-    if (plat === 'facebook') {
+    if (plat === 'facebook' || plat === 'facebook-post') {
+      navigate('/facebook/post', { state: { url: inputUrl } });
+    } else if (plat === 'facebook-reels') {
       navigate('/facebook/reels', { state: { url: inputUrl } });
     } else {
       navigate('/instagram/reels', { state: { url: inputUrl } });

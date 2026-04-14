@@ -23,7 +23,7 @@ const navLinks = [
     icon: Facebook,
     children: [
       { label: 'Reels', path: '/facebook/reels', icon: Film },
-      { label: 'Video', path: '/facebook/video', icon: Video },
+      { label: 'Post', path: '/facebook/post', icon: Image },
       { label: 'Audio', path: '/facebook/audio', icon: Music },
     ],
   },

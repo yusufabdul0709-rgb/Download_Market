@@ -11,8 +11,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@xaviabot/fb-downloader": "^1.0.14",
     "archiver": "^7.0.1",
     "axios": "^1.15.0",
+    "btch-downloader": "^6.0.26",
     "bullmq": "^5.7.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -27,6 +29,8 @@
     "morgan": "^1.10.0",
     "node-cron": "^3.0.3",
     "p-queue": "^8.1.1",
+    "ruhend-scraper": "^10.0.1",
+    "snapsave-media-downloader": "^2.4.0",
     "uuid": "^10.0.0",
     "winston": "^3.13.0"
   },

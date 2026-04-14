@@ -197,10 +197,16 @@ async function getMediaPreview(url, platform) {
       if (
         lowerMsg.includes('private video') ||
         lowerMsg.includes('this video is private') ||
+        lowerMsg.includes('registered users') ||
+        lowerMsg.includes('cookies-to-yt-dlp') ||
         lowerMsg.includes('sign in to confirm you\'ve been granted access') ||
         (lowerMsg.includes('sign in') && !lowerMsg.includes('bot'))
       ) {
-        const error = new Error('This content is private or age-restricted. Please make sure the URL is publicly accessible.');
+        let text = 'This content is private or age-restricted. Please make sure the URL is publicly accessible.';
+        if (platform === 'facebook' || lowerMsg.includes('registered users')) {
+           text = 'This Facebook post requires a login (it is either private or locked by Facebook). Please provide a Public post link instead.';
+        }
+        const error = new Error(text);
         error.statusCode = 403;
         error.code = 'PRIVATE_CONTENT';
         error.isOperational = true;
@@ -236,8 +242,21 @@ async function getMediaPreview(url, platform) {
         throw error;
       }
 
+      // ── Extractor / Unhandled Errors ───────────────────────────────────
+      if (lowerMsg.includes('issues?q=') || lowerMsg.includes('unsupported') || lowerMsg.includes('extractorerror')) {
+        let userMsg = 'Could not extract media info. The link might be unsupported or requires login.';
+        if (platform === 'facebook' || url.includes('facebook:')) {
+          userMsg = 'Facebook blocks this type of link. If this is a "share" link, try copying the direct post link from the address bar instead, and ensure the post is Public.';
+        }
+        const error = new Error(userMsg);
+        error.statusCode = 400;
+        error.code = 'EXTRACTOR_ERROR';
+        error.isOperational = true;
+        throw error;
+      }
+
       // ── Generic fallback ───────────────────────────────────────────────
-      const error = new Error(`Could not fetch media info: ${message.slice(-150) || 'Unknown error'}. Please check the URL and try again.`);
+      const error = new Error(`Could not fetch media info: ${message.slice(-80) || 'Unknown error'}. Please check the URL and try again.`);
       error.statusCode = 500;
       error.code = 'FETCH_FAILED';
       error.isOperational = true;
