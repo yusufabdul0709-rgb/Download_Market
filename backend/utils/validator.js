@@ -30,12 +30,12 @@ function validateUrl(rawUrl) {
   if (!matched) {
     return {
       valid: false,
-      error: `Unsupported domain "${hostname}". Supported: YouTube and Instagram.`,
+      error: `Unsupported domain "${hostname}". Supported: Instagram and Facebook.`,
     };
   }
 
   // Detect platform
-  const platform = matched.includes('instagram') ? 'instagram' : 'youtube';
+  const platform = matched.includes('instagram') ? 'instagram' : 'facebook';
 
   // Reject Instagram browse/collection pages (not downloadable)
   if (platform === 'instagram') {
@@ -79,7 +79,7 @@ function validatePlatform(platform) {
 /**
  * Validate the media type field.
  */
-const ALLOWED_TYPES = ['video', 'shorts', 'reel', 'post', 'audio', 'image', 'carousel'];
+const ALLOWED_TYPES = ['video', 'reel', 'post', 'audio', 'image', 'carousel'];
 
 function validateMediaType(type) {
   if (!type || !ALLOWED_TYPES.includes(type)) {

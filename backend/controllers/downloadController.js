@@ -246,9 +246,9 @@ async function processInstagramJob(jobId, job) {
 }
 
 /**
- * Handle YouTube specific logic using yt-dlp.
+ * Handle Facebook specific logic using yt-dlp.
  */
-async function processYouTubeJob(jobId, job) {
+async function processFacebookJob(jobId, job) {
   const { url, type } = job;
   const outBase = path.join(TEMP_DIR, jobId);
 
@@ -256,45 +256,36 @@ async function processYouTubeJob(jobId, job) {
   try {
     metadata = await fetchMetadata(url);
   } catch (err) {
-    throw new Error(`Metadata fetch failed: ${err.message}`);
-  }
-
-  const maxDur = config.ytdlp.maxDurationSeconds;
-  if (maxDur > 0 && metadata.duration && metadata.duration > maxDur) {
-    throw new Error(`Video duration exceeds limit.`);
+    throw new Error(`Facebook metadata fetch failed: ${err.message}`);
   }
 
   const formatId = job.formatId || null;
   const outTemplate = `${outBase}.%(ext)s`;
-  
-  // Custom build args to support exact requested user commands
+
   const args = [];
-  args.push('--no-playlist', '--no-warnings');
+  args.push('--no-playlist', '--no-warnings', '--no-check-certificates');
 
   if (formatId === 'audio' || type === 'audio') {
-    // Audio: yt-dlp -x --audio-format mp3 <url>
     args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
   } else {
-    // Video: yt-dlp -f <formatId> -o ./temp/%(title)s.%(ext)s <url>
+    // Download best available
     const fId = (formatId && formatId !== 'best') ? `${formatId}+bestaudio/best` : 'bestvideo+bestaudio/best';
     args.push('-f', fId, '--merge-output-format', 'mp4', '-o', outTemplate, url);
   }
 
-  updateJob(jobId, { progress: 5 });
-
   await retryWithBackoff(
     () => runDownload(args, jobId),
-    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `download-${jobId}` }
+    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `fb-download-${jobId}` }
   );
 
   const outputFile = findOutputFile(outBase);
   if (!outputFile || !fs.existsSync(outputFile)) {
-    throw new Error('Output file not found after download.');
+    throw new Error('Output file not found after Facebook download.');
   }
 
   const ext = path.extname(outputFile).toLowerCase() || '.mp4';
-  const videoTitle = metadata?.title || metadata?.fulltitle || 'YouTube_Video';
-  const prettyName = sanitizeFilename(videoTitle) + ext;
+  const title = metadata?.title || metadata?.description?.slice(0, 80) || 'Facebook Video';
+  const prettyName = sanitizeFilename(title) + ext;
 
   return { outputFile, prettyName };
 }
@@ -316,8 +307,10 @@ async function processJob(jobId) {
       let result;
       if (job.platform === 'instagram') {
         result = await processInstagramJob(jobId, job);
+      } else if (job.platform === 'facebook') {
+        result = await processFacebookJob(jobId, job);
       } else {
-        result = await processYouTubeJob(jobId, job);
+         throw new Error(`Platform ${job.platform} is not supported.`);
       }
 
       updateJob(jobId, { progress: 100 });

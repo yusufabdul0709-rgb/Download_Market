@@ -5,32 +5,28 @@ const { enqueuePreview } = require('./concurrencyQueue');
 const logger = require('../utils/logger');
 const cache = require('./previewCache');
 
-/**
- * Normalise raw yt-dlp JSON metadata into a clean preview object for YouTube.
- * @param {object} raw
- * @param {string} url
- * @returns {object}
- */
-function normaliseYouTubeData(raw, url) {
-  const formats = (raw.formats || [])
-    .filter((f) => f.vcodec && f.vcodec !== 'none' && f.height)
-    .reduce((acc, f) => {
-      const label = `${f.height}p`;
-      // Keep only one entry per resolution (prefer the first encountered)
-      if (!acc.find((x) => x.quality === label)) {
-        acc.push({ quality: label, formatId: f.format_id, label, format: 'mp4' });
-      }
-      return acc;
-    }, [])
-    .sort((a, b) => parseInt(b.quality) - parseInt(a.quality));
 
-  // If no video formats found, add default options
+
+/**
+ * Normalise raw yt-dlp JSON metadata for Facebook content.
+ */
+function normaliseFacebookData(raw, url) {
+  const isAudioOnly = url.includes('audio') || url.includes('podcast');
+  
+  // Facebook often has HD and SD formats
+  // yt-dlp identifies them as 'hd' and 'sd' in some extractors or we pick by resolution
+  const formats = (raw.formats || [])
+    .filter(f => f.vcodec !== 'none' && f.acodec !== 'none')
+    .slice(0, 5) // Just a few
+    .map(f => ({
+      quality: f.format_note || `${f.height}p` || 'HD',
+      formatId: f.format_id,
+      label: f.format_note === 'hd' ? 'HD Quality' : 'Standard Quality',
+      format: 'mp4'
+    }));
+
   if (formats.length === 0) {
-    formats.push(
-      { quality: '720p', formatId: 'best', label: '720p', format: 'mp4' },
-      { quality: '480p', formatId: 'best', label: '480p', format: 'mp4' },
-      { quality: '360p', formatId: 'best', label: '360p', format: 'mp4' }
-    );
+    formats.push({ quality: 'HD', formatId: 'best', label: 'Highest Quality', format: 'mp4' });
   }
 
   // Add audio option
@@ -38,19 +34,16 @@ function normaliseYouTubeData(raw, url) {
     quality: '128kbps',
     formatId: 'audio',
     format: 'mp3',
-    label: 'MP3 Audio',
+    label: 'Extract MP3',
   });
 
-  const isShorts = url.includes('/shorts/');
-
   return {
-    platform: 'youtube',
-    type: isShorts ? 'short' : 'video',
-    title: raw.title || raw.fulltitle || 'YouTube Content',
+    platform: 'facebook',
+    type: url.includes('/reel') ? 'reel' : 'video',
+    title: raw.title || raw.description?.slice(0, 100) || 'Facebook Content',
     thumbnail: raw.thumbnail || raw.thumbnails?.[0]?.url || null,
     duration: raw.duration || null,
     formats,
-    ...(isShorts ? { media: [{ url }] } : {}) // Case 2 requirement
   };
 }
 
@@ -175,9 +168,11 @@ async function getMediaPreview(url, platform) {
         let preview;
         if (platform === 'instagram') {
           preview = await fetchInstagramData(url);
-        } else {
+        } else if (platform === 'facebook') {
           const raw = await fetchMetadata(url);
-          preview = normaliseYouTubeData(raw, url);
+          preview = normaliseFacebookData(raw, url);
+        } else {
+          throw new Error(`Platform ${platform} is not supported.`);
         }
         return preview;
       } catch (err) {
@@ -252,4 +247,4 @@ async function getMediaPreview(url, platform) {
   });
 }
 
-module.exports = { getMediaPreview, normaliseYouTubeData: normaliseYouTubeData, fetchInstagramData };
+module.exports = { getMediaPreview, fetchInstagramData };

@@ -7,12 +7,11 @@ import {
   X,
   ChevronDown,
   Video,
-  Scissors,
   Image,
   Music,
   Film,
 } from 'lucide-react';
-import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from './BrandIcons';
+import { InstagramIcon as Instagram, FacebookIcon as Facebook } from './BrandIcons';
 
 const navLinks = [
   {
@@ -20,11 +19,12 @@ const navLinks = [
     path: '/',
   },
   {
-    label: 'YouTube',
-    icon: Youtube,
+    label: 'Facebook',
+    icon: Facebook,
     children: [
-      { label: 'Video', path: '/youtube/video', icon: Video },
-      { label: 'Shorts', path: '/youtube/shorts', icon: Scissors },
+      { label: 'Reels', path: '/facebook/reels', icon: Film },
+      { label: 'Video', path: '/facebook/video', icon: Video },
+      { label: 'Audio', path: '/facebook/audio', icon: Music },
     ],
   },
   {

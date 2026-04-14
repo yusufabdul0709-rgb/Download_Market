@@ -12,6 +12,18 @@ export const isValidYouTubeURL = (url) => {
 };
 
 /**
+ * Validates a Facebook URL
+ */
+export const isValidFacebookURL = (url) => {
+  const patterns = [
+    /^(https?:\/\/)?(www\.)?facebook\.com\/.*/,
+    /^(https?:\/\/)?(m\.)?facebook\.com\/.*/,
+    /^(https?:\/\/)?fb\.watch\/.*/,
+  ];
+  return patterns.some((pattern) => pattern.test(url.trim()));
+};
+
+/**
  * Checks if an Instagram URL is a browse/collection page (not a downloadable post).
  * Examples: /reels/audio/123, /explore/tags/x, /reels/ (no shortcode)
  */
@@ -61,10 +73,10 @@ export const isValidInstagramURL = (url) => {
 };
 
 /**
- * Validates any supported URL (YouTube or Instagram)
+ * Validates any supported URL (Instagram or Facebook)
  */
 export const isValidURL = (url) => {
-  return isValidYouTubeURL(url) || isValidInstagramURL(url);
+  return isValidYouTubeURL(url) || isValidInstagramURL(url) || isValidFacebookURL(url);
 };
 
 /**
@@ -83,6 +95,10 @@ export const detectPlatform = (url) => {
     if (trimmed.includes('/p/')) return 'instagram-post';
     return 'instagram';
   }
+  if (trimmed.includes('facebook.com') || trimmed.includes('fb.watch')) {
+    if (trimmed.includes('/reel/') || trimmed.includes('/reels/')) return 'facebook-reels';
+    return 'facebook';
+  }
   return null;
 };
 
@@ -99,6 +115,8 @@ export const getPlatformInfo = (url) => {
     'instagram-reels': { name: 'Instagram Reels', type: 'reel', platform: 'instagram' },
     'instagram-post': { name: 'Instagram Post', type: 'post', platform: 'instagram' },
     instagram: { name: 'Instagram', type: 'reel', platform: 'instagram' },
+    'facebook-reels': { name: 'Facebook Reels', type: 'reel', platform: 'facebook' },
+    facebook: { name: 'Facebook', type: 'video', platform: 'facebook' },
   };
 
   return map[platform] || { name: 'Unknown', type: 'video', platform: 'unknown' };

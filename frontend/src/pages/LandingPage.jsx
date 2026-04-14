@@ -17,7 +17,7 @@ import {
   TrendingUp,
   ChevronRight,
 } from 'lucide-react';
-import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from '../components/BrandIcons';
+import { FacebookIcon as Facebook, InstagramIcon as Instagram } from '../components/BrandIcons';
 import URLInput from '../components/URLInput';
 import IframeAdBanner from '../components/IframeAdBanner';
 import HowToDownload from '../components/HowToDownload';
@@ -59,22 +59,31 @@ const features = [
 
 const platforms = [
   {
-    name: 'YouTube Video',
-    icon: Video,
-    path: '/youtube/video',
-    color: 'text-youtube',
-    bg: 'bg-youtube/10',
-    borderColor: 'hover:border-youtube/30',
-    description: 'Download any YouTube video in HD quality',
+    name: 'Facebook Reels',
+    icon: Film,
+    path: '/facebook/reels',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    borderColor: 'hover:border-blue-300',
+    description: 'Download Facebook Reels in high quality',
   },
   {
-    name: 'YouTube Shorts',
-    icon: Scissors,
-    path: '/youtube/shorts',
-    color: 'text-youtube',
-    bg: 'bg-youtube/10',
-    borderColor: 'hover:border-youtube/30',
-    description: 'Save vertical YouTube Shorts easily',
+    name: 'Facebook Video',
+    icon: Video,
+    path: '/facebook/video',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    borderColor: 'hover:border-blue-300',
+    description: 'Save Facebook videos to your device',
+  },
+  {
+    name: 'Facebook Audio',
+    icon: Music,
+    path: '/facebook/audio',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    borderColor: 'hover:border-blue-300',
+    description: 'Extract MP3 audio from FB content',
   },
   {
     name: 'Instagram Reels',
@@ -103,15 +112,6 @@ const platforms = [
     borderColor: 'hover:border-instagram/30',
     description: 'Extract audio from Instagram content',
   },
-  {
-    name: 'Instagram Story',
-    icon: Smartphone,
-    path: '/instagram/reels', // Stories use same pipeline
-    color: 'text-instagram',
-    bg: 'bg-instagram/10',
-    borderColor: 'hover:border-instagram/30',
-    description: 'Download 24h Instagram Stories',
-  },
 ];
 
 const stats = [
@@ -127,7 +127,12 @@ const LandingPage = () => {
 
   const handleSubmit = (inputUrl) => {
     triggerPopunder();
-    navigate('/instagram/reels', { state: { url: inputUrl } });
+    const plat = detectPlatform(inputUrl);
+    if (plat === 'facebook') {
+      navigate('/facebook/reels', { state: { url: inputUrl } });
+    } else {
+      navigate('/instagram/reels', { state: { url: inputUrl } });
+    }
   };
 
   const containerVariants = {
@@ -146,8 +151,8 @@ const LandingPage = () => {
   return (
     <div className="relative overflow-hidden">
       <SEOHead
-        title="Free Instagram Video & Reels Downloader"
-        description="Download Instagram videos, reels, photos, and audio for free in HD quality. No watermark, no signup required. Fast and safe online downloader."
+        title="Facebook & Instagram Reels Downloader — Free & Fast"
+        description="Download Facebook and Instagram videos, reels, and audio for free in HD. No login required. Fast and safe online downloader."
       />
       {/* Background effects */}
       <div className="absolute inset-0 animated-gradient opacity-80" />
@@ -179,8 +184,8 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-text-primary"
           >
-            Free <span className="gradient-text-alt">Instagram</span> & 
-             <span className="gradient-text-alt">Youtube Downloader</span>
+            Free <span className="text-blue-600">Facebook</span> & 
+             <span className="gradient-text-alt"> Reels Downloader</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -188,7 +193,7 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-6 leading-relaxed font-medium"
           >
-            Download your favorite Instagram Reels, Photos, and Videos in high quality. Fast, free, and no watermark.
+            Download your favorite Facebook and Instagram Reels, Photos, and Videos in high quality.
           </motion.p>
         </motion.div>
       </section>

@@ -57,14 +57,14 @@ const config = {
   baseUrl: process.env.BASE_URL || 'http://localhost:5000',
 
   // ── Supported platforms / domains ────────────────────────────────────────
-  supportedPlatforms: ['youtube', 'instagram'],
+  supportedPlatforms: ['instagram', 'facebook'],
   supportedDomains: [
-    'youtube.com',
-    'www.youtube.com',
-    'youtu.be',
-    'm.youtube.com',
     'instagram.com',
     'www.instagram.com',
+    'facebook.com',
+    'www.facebook.com',
+    'fb.watch',
+    'm.facebook.com',
   ],
 };
 
