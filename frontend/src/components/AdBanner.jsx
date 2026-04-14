@@ -11,14 +11,14 @@ const AdBanner = () => {
 
     // The script expects this container element
     const container = document.createElement('div');
-    container.id = 'container-751308d4320150fcca2bc21e2855dd55';
+    container.id = 'container-a950cf8347a21b6b8cd24a211708b7dd';
     
     // Create the script element
     const script = document.createElement('script');
     script.type = 'text/javascript';
     script.async = true;
     script.dataset.cfasync = 'false';
-    script.src = 'https://pl29145625.profitablecpmratenetwork.com/751308d4320150fcca2bc21e2855dd55/invoke.js';
+    script.src = 'https://pl29148133.profitablecpmratenetwork.com/a950cf8347a21b6b8cd24a211708b7dd/invoke.js';
 
     bannerRef.current.appendChild(container);
     bannerRef.current.appendChild(script);
