@@ -126,23 +126,8 @@ const LandingPage = () => {
   const triggerPopunder = usePopunder();
 
   const handleSubmit = (inputUrl) => {
-    // Trigger popunder on first real user action
     triggerPopunder();
-
-    const platform = detectPlatform(inputUrl);
-    if (platform === 'youtube-shorts') {
-      navigate('/youtube/shorts', { state: { url: inputUrl } });
-    } else if (platform === 'youtube') {
-      navigate('/youtube/video', { state: { url: inputUrl } });
-    } else if (platform === 'instagram-reels') {
-      navigate('/instagram/reels', { state: { url: inputUrl } });
-    } else if (platform === 'instagram-post') {
-      navigate('/instagram/post', { state: { url: inputUrl } });
-    } else if (platform?.includes('instagram')) {
-      navigate('/instagram/reels', { state: { url: inputUrl } });
-    } else {
-      navigate('/youtube/video', { state: { url: inputUrl } });
-    }
+    navigate('/instagram/reels', { state: { url: inputUrl } });
   };
 
   const containerVariants = {
@@ -173,7 +158,7 @@ const LandingPage = () => {
       <div className="blob-violet top-[40%] left-[30%]" />
 
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center justify-center px-4 sm:px-6">
+      <section className="relative pt-24 pb-12 flex items-center justify-center px-4 sm:px-6">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -194,41 +179,18 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-text-primary"
           >
-            Download <span className="gradient-text-alt">Instagram Reels</span> in HD Free
+            Free <span className="gradient-text-alt">Instagram</span> & 
+             <span className="gradient-text-alt">Youtube Downloader</span>
           </motion.h1>
 
           {/* Subtitle */}
           <motion.p
             variants={itemVariants}
-            className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed font-medium"
+            className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-6 leading-relaxed font-medium"
           >
             Download your favorite Instagram Reels, Photos, and Videos in high quality. Fast, free, and no watermark.
           </motion.p>
-
-          {/* URL Input */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <URLInput
-              value={url}
-              onChange={setUrl}
-              onSubmit={handleSubmit}
-              placeholder="Paste YouTube or Instagram URL here..."
-              id="hero-url-input"
-            />
-          </motion.div>
-
-          {/* Inline ad after input */}
-          <motion.div variants={itemVariants} className="mb-10 w-full flex justify-center">
-            <IframeAdBanner id="ad-landing-hero-inline" />
-          </motion.div>
-
         </motion.div>
-      </section>
-
-      {/* Clean Iframe Ad — between hero and platforms */}
-      <section className="relative py-4 px-4 sm:px-6 z-10">
-        <div className="max-w-4xl mx-auto flex justify-center">
-          <IframeAdBanner id="ad-landing-mid" />
-        </div>
       </section>
 
       {/* Platform Cards */}

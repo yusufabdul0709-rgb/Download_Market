@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Clock, Film, Heart, MessageCircle } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import IframeAdBanner from '../../components/IframeAdBanner';
 import PreviewCard from '../../components/PreviewCard';

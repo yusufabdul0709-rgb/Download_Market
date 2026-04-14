@@ -29,14 +29,14 @@ const MainLayout = () => {
         }}
       />
 
+      {/* ── #ad-top — Top Banner Ad (Above everything) ── */}
+      <div className="w-full flex justify-center py-3 bg-white/50 border-b border-primary/5" id="ad-top">
+        <IframeAdBanner id="ad-top-banner" />
+      </div>
+
       <Navbar />
 
-      <main className="flex-1 pt-20">
-        {/* ── #ad-top — Top Banner Ad (below navbar, above the fold) ── */}
-        <div className="w-full flex justify-center py-3 bg-white/50 border-b border-primary/5" id="ad-top">
-          <IframeAdBanner id="ad-top-banner" />
-        </div>
-
+      <main className="flex-1">
         <Outlet />
       </main>
 
