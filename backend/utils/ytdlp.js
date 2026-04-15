@@ -280,4 +280,4 @@ function parseProgress(line) {
   return null;
 }
 
-module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress, normaliseMediaUrl };
+module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress, normaliseMediaUrl, baseArgs };

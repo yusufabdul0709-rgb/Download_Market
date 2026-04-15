@@ -1,0 +1,26 @@
+# render.yaml — Render deployment configuration
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: download-market
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: |
+      cd backend && npm install
+      cd ../frontend && npm install && npm run build
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: BASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: YTDLP_COOKIES_PATH
+        sync: false
+    # yt-dlp binary is downloaded automatically via postinstall script
+    # ffmpeg-static is bundled via npm

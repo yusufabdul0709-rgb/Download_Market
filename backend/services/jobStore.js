@@ -14,7 +14,7 @@ const config = require('../config');
  * @param {object} data  { url, platform, type }
  * @returns {object} JobRecord
  */
-function createJob(jobId, { url, platform, type }) {
+function createJob(jobId, { url, platform, type, formatId }) {
   const ttl = config.fileTTLSeconds;
   const now = Date.now();
 
@@ -23,6 +23,7 @@ function createJob(jobId, { url, platform, type }) {
     url,
     platform,
     type,
+    formatId: formatId || null,
     status: 'queued',
     progress: 0,
     filePath: null,
@@ -41,7 +42,7 @@ function createJob(jobId, { url, platform, type }) {
     logger.debug(`[JobStore] Expired job ${jobId}`);
   }, ttl * 1000);
 
-  logger.debug(`[JobStore] Created job ${jobId}`);
+  logger.debug(`[JobStore] Created job ${jobId} — ${platform}/${type}`);
   return record;
 }
 

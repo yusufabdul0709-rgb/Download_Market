@@ -10,12 +10,10 @@ const { createJob, getJob, updateJob } = require('../services/jobStore');
 const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
-const { buildDownloadArgs, parseProgress, fetchMetadata, normaliseMediaUrl } = require('../utils/ytdlp');
-// videoService removed — all platforms now use yt-dlp via async job queue
+const { buildDownloadArgs, parseProgress, fetchMetadata, normaliseMediaUrl, baseArgs } = require('../utils/ytdlp');
 const axios = require('axios');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
-const archiver = require('archiver');
 const { retryWithBackoff, isRetryableError } = require('../utils/retryHelper');
 const { asyncHandler, AppError } = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
@@ -23,7 +21,13 @@ const config = require('../config');
 
 const TEMP_DIR = path.resolve(config.tempDir);
 
-// ── Deno PATH for download spawns ─────────────────────────────────────────────
+// ── Job timeout (5 min per job — prevents Render from killing the process) ────
+const JOB_TIMEOUT_MS = parseInt(process.env.JOB_TIMEOUT_MS, 10) || 300_000;
+
+// ── Retry config ──────────────────────────────────────────────────────────────
+const MAX_RETRIES = parseInt(process.env.MAX_DOWNLOAD_RETRIES, 10) || 3;
+
+// ── Deno + ffmpeg PATH injection ──────────────────────────────────────────────
 const DENO_BIN_DIR = path.join(os.homedir(), '.deno', 'bin');
 const spawnEnv = { ...process.env };
 const sep = process.platform === 'win32' ? ';' : ':';
@@ -32,12 +36,9 @@ if (fs.existsSync(DENO_BIN_DIR)) {
   spawnEnv.PATH = `${DENO_BIN_DIR}${sep}${spawnEnv.PATH || ''}`;
 }
 
-// Add ffmpeg and ffprobe directories directly to the execution PATH
-// yt-dlp automatically resolves them safely without --ffmpeg-location
 if (ffmpegPath && ffprobePath) {
   const ffmpegDir = path.dirname(ffmpegPath);
   const ffprobeDir = path.dirname(ffprobePath);
-  // Ensure we don't prepend duplicate dirs if they are the same
   const binDirs = Array.from(new Set([ffmpegDir, ffprobeDir])).join(sep);
   spawnEnv.PATH = `${binDirs}${sep}${spawnEnv.PATH || ''}`;
 }
@@ -46,23 +47,13 @@ if (ffmpegPath && ffprobePath) {
 
 /**
  * Sanitise a string for use as a safe filename.
- * Removes/replaces characters that are illegal on Windows/macOS/Linux.
- *
- * @param {string} name
- * @param {number} [maxLength=200]
- * @returns {string}
  */
 function sanitizeFilename(name, maxLength = 200) {
   if (!name) return 'download';
-
   return name
-    // Remove characters illegal in filenames on any OS
-    .replace(/[<>:"\/?*|\\]/g, '')
-    // Replace sequences of whitespace / control chars with a single space
+    .replace(/[<>:"\\/?*|\\\\]/g, '')
     .replace(/[\s\x00-\x1f]+/g, ' ')
-    // Trim leading/trailing dots and spaces (Windows rejects these)
     .replace(/^[\s.]+|[\s.]+$/g, '')
-    // Limit length (leave room for extension)
     .substring(0, maxLength)
     .trim()
     || 'download';
@@ -76,25 +67,19 @@ function findOutputFile(expectedBase) {
   const baseName = path.basename(expectedBase);
   try {
     const files = fs.readdirSync(dir);
-    // Find all files that start with the jobId
     const matches = files.filter((f) => f.startsWith(baseName));
-    
     if (matches.length === 0) return null;
 
-    // Filter out intermediate fragments (like .f140.m4a, .temp.mp4, .part)
+    // Filter out intermediate fragments
     const finalFiles = matches.filter(f => !f.match(/\.f\d+\./) && !f.endsWith('.part') && !f.endsWith('.ytdl'));
 
-    // Prefer mp4, then mp3, then webm
     const preferredOrder = ['.mp4', '.mp3', '.webm', '.mkv', '.m4a'];
-    
     let bestMatch = null;
     let bestScore = Infinity;
 
     for (const f of (finalFiles.length > 0 ? finalFiles : matches)) {
       const ext = path.extname(f).toLowerCase();
       const score = preferredOrder.indexOf(ext);
-      // If extension is found in preferredOrder, score is positive.
-      // We want the lowest score (0 for .mp4 is best).
       const currentScore = score !== -1 ? score : 999;
       if (currentScore < bestScore) {
         bestScore = currentScore;
@@ -109,11 +94,14 @@ function findOutputFile(expectedBase) {
 }
 
 /**
- * Run yt-dlp download with live progress. No BullMQ — runs in-process.
+ * Run yt-dlp download with live progress tracking and timeout.
+ * Uses baseArgs() for full anti-bot protection (cookies, headers, proxy).
  */
-function runDownload(args, jobId, timeoutMs = 300_000) {
+function runDownload(args, jobId, timeoutMs = JOB_TIMEOUT_MS) {
   return new Promise((resolve, reject) => {
     const ytdlpBin = config.ytdlp.binary;
+
+    logger.debug(`[Download] yt-dlp ${args.slice(0, 5).join(' ')} ... (${args.length} args total)`);
 
     const proc = spawn(ytdlpBin, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -123,8 +111,9 @@ function runDownload(args, jobId, timeoutMs = 300_000) {
     });
 
     const timer = setTimeout(() => {
+      logger.error(`[Download] Job ${jobId} timed out after ${timeoutMs / 1000}s — killing process`);
       proc.kill('SIGKILL');
-      reject(new Error('yt-dlp download timed out'));
+      reject(new Error(`Download timed out after ${timeoutMs / 1000} seconds. Try a shorter video.`));
     }, timeoutMs);
 
     proc.stdout.setEncoding('utf8');
@@ -135,7 +124,7 @@ function runDownload(args, jobId, timeoutMs = 300_000) {
     const handleLine = (line) => {
       const pct = parseProgress(line);
       if (pct !== null) {
-        updateJob(jobId, { progress: pct });
+        updateJob(jobId, { progress: Math.min(20 + Math.floor(pct * 0.75), 95) });
       }
     };
 
@@ -147,8 +136,29 @@ function runDownload(args, jobId, timeoutMs = 300_000) {
 
     proc.on('close', (code) => {
       clearTimeout(timer);
-      if (code === 0) resolve();
-      else reject(new Error(`yt-dlp exited ${code}: ${stderrBuf.slice(-400).trim()}`));
+      if (code === 0) {
+        resolve();
+      } else {
+        // Extract a user-friendly error from yt-dlp stderr
+        const hint = stderrBuf.slice(-500).trim();
+        let userError = `Download failed (exit code ${code}).`;
+
+        if (hint.includes('429') || hint.includes('Too Many Requests')) {
+          userError = 'YouTube rate limited our server. Please wait 1-2 minutes and try again.';
+        } else if (hint.includes('Private video') || hint.includes('Sign in')) {
+          userError = 'This video is private or requires login. Only public videos can be downloaded.';
+        } else if (hint.includes('Video unavailable') || hint.includes('not available')) {
+          userError = 'This video is unavailable. It may have been deleted or is region-restricted.';
+        } else if (hint.includes('Unsupported URL')) {
+          userError = 'This URL format is not supported. Please use a direct video link.';
+        } else if (hint.includes('403') || hint.includes('Forbidden')) {
+          userError = 'Access denied by the platform. The content may be restricted.';
+        }
+
+        const err = new Error(userError);
+        err.ytdlpStderr = hint;
+        reject(err);
+      }
     });
 
     proc.on('error', (err) => {
@@ -158,216 +168,114 @@ function runDownload(args, jobId, timeoutMs = 300_000) {
   });
 }
 
-/**
- * Downloads a single direct HTTP URL to a file.
- */
-async function downloadDirectMedia(url, outputPath) {
-  const response = await axios({
-    method: 'GET',
-    url: url,
-    responseType: 'stream',
-    timeout: 60000,
-  });
-  const writer = fs.createWriteStream(outputPath);
-  response.data.pipe(writer);
-  return new Promise((resolve, reject) => {
-    writer.on('finish', resolve);
-    writer.on('error', reject);
-  });
-}
+// ── Platform-specific download handlers ───────────────────────────────────────
 
 /**
- * Extracts audio out of an MP4 file into MP3 using ffmpeg.
+ * Build download args using the shared baseArgs() from ytdlp.js.
+ * This ensures cookies, anti-bot headers, proxy, and geo-bypass are always used.
  */
-async function extractAudio(inputPath, outputPath) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn('ffmpeg', [
-      '-y', '-i', inputPath,
-      '-vn', '-ar', '44100', '-ac', '2', '-b:a', '128k',
-      outputPath
-    ], { stdio: 'ignore' });
-
-    proc.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`ffmpeg exited with code ${code}`));
-    });
-
-    proc.on('error', (err) => reject(new Error(`Failed to start ffmpeg: ${err.message}`)));
-  });
-}
-
-/**
- * Handle Instagram specific logic using yt-dlp (replaces broken instagram-url-direct).
- * yt-dlp natively supports Instagram posts, reels, and stories.
- */
-async function processInstagramJob(jobId, job) {
-  const { url, type } = job;
-  const outBase = path.join(TEMP_DIR, jobId);
-
-  let metadata;
-  try {
-    metadata = await fetchMetadata(url);
-  } catch (err) {
-    throw new Error(`Instagram metadata fetch failed: ${err.message}`);
-  }
-
-  updateJob(jobId, { progress: 10 });
-
-  const formatId = job.formatId || null;
-  const outTemplate = `${outBase}.%(ext)s`;
-
-  const args = [];
-  args.push('--no-playlist', '--no-warnings', '--no-check-certificates');
+function buildJobArgs({ url, type, formatId, outTemplate }) {
+  const args = [...baseArgs()];
 
   if (formatId === 'audio' || type === 'audio') {
-    // Extract audio as MP3
-    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
+    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
+  } else if (formatId && formatId !== 'best') {
+    args.push('-f', `${formatId}+bestaudio/best`);
   } else {
-    // Download best available video/image
-    args.push('-f', 'best', '--merge-output-format', 'mp4', '-o', outTemplate, url);
+    // Best quality with video+audio merged
+    args.push('-f', 'bestvideo+bestaudio/best');
   }
 
-  updateJob(jobId, { progress: 20 });
+  args.push('--merge-output-format', 'mp4', '-o', outTemplate, url);
 
-  await retryWithBackoff(
-    () => runDownload(args, jobId),
-    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `ig-download-${jobId}` }
-  );
-
-  const outputFile = findOutputFile(outBase);
-  if (!outputFile || !fs.existsSync(outputFile)) {
-    throw new Error('Output file not found after Instagram download.');
-  }
-
-  const ext = path.extname(outputFile).toLowerCase() || '.mp4';
-  const title = metadata?.title || metadata?.description?.slice(0, 80) || 'Instagram Post';
-  const prettyName = sanitizeFilename(title) + ext;
-
-  return { outputFile, prettyName };
+  return args;
 }
 
 /**
- * Handle Facebook specific logic using yt-dlp.
+ * Generic platform download handler.
+ * Works for YouTube, Facebook, and Instagram — all use yt-dlp.
  */
-async function processFacebookJob(jobId, job) {
+async function processPlatformJob(jobId, job, platformLabel) {
   const { url: originalUrl, type } = job;
   const url = await normaliseMediaUrl(originalUrl);
   const outBase = path.join(TEMP_DIR, jobId);
 
+  // Step 1: Fetch metadata
   let metadata;
   try {
     metadata = await fetchMetadata(url);
   } catch (err) {
-    throw new Error(`Facebook metadata fetch failed: ${err.message}`);
-  }
-
-  const formatId = job.formatId || null;
-  const outTemplate = `${outBase}.%(ext)s`;
-
-  const args = [];
-  args.push('--no-playlist', '--no-warnings', '--no-check-certificates');
-
-  if (formatId === 'audio' || type === 'audio') {
-    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
-  } else {
-    // Download best available
-    const fId = (formatId && formatId !== 'best') ? `${formatId}+bestaudio/best` : 'bestvideo+bestaudio/best';
-    args.push('-f', fId, '--merge-output-format', 'mp4', '-o', outTemplate, url);
-  }
-
-  await retryWithBackoff(
-    () => runDownload(args, jobId),
-    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `fb-download-${jobId}` }
-  );
-
-  const outputFile = findOutputFile(outBase);
-  if (!outputFile || !fs.existsSync(outputFile)) {
-    throw new Error('Output file not found after Facebook download.');
-  }
-
-  const ext = path.extname(outputFile).toLowerCase() || '.mp4';
-  const title = metadata?.title || metadata?.description?.slice(0, 80) || 'Facebook Video';
-  const prettyName = sanitizeFilename(title) + ext;
-
-  return { outputFile, prettyName };
-}
-
-/**
- * Handle YouTube specific logic using yt-dlp.
- */
-async function processYouTubeJob(jobId, job) {
-  const { url: originalUrl, type } = job;
-  const url = await normaliseMediaUrl(originalUrl);
-  const outBase = path.join(TEMP_DIR, jobId);
-
-  let metadata;
-  try {
-    metadata = await fetchMetadata(url);
-  } catch (err) {
-    throw new Error(`YouTube metadata fetch failed: ${err.message}`);
+    throw new Error(`${platformLabel} metadata fetch failed: ${err.message}`);
   }
 
   updateJob(jobId, { progress: 10 });
 
+  // Step 2: Build args with full anti-bot protection
   const formatId = job.formatId || null;
   const outTemplate = `${outBase}.%(ext)s`;
+  const args = buildJobArgs({ url, type, formatId, outTemplate });
 
-  const args = [];
-  args.push('--no-playlist', '--no-warnings', '--no-check-certificates');
+  updateJob(jobId, { progress: 15 });
 
-  if (formatId === 'audio' || type === 'audio') {
-    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
-  } else {
-    // Download best available or specific format
-    const fId = (formatId && formatId !== 'best') ? `${formatId}+bestaudio/best` : 'bestvideo+bestaudio/best';
-    args.push('-f', fId, '--merge-output-format', 'mp4', '-o', outTemplate, url);
-  }
-
-  updateJob(jobId, { progress: 20 });
-
+  // Step 3: Download with retry (maxRetries = 3)
   await retryWithBackoff(
     () => runDownload(args, jobId),
-    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `yt-download-${jobId}` }
+    {
+      maxRetries: MAX_RETRIES,
+      initialDelay: 3_000,
+      maxDelay: 15_000,
+      shouldRetry: (err) => {
+        // Don't retry on permanent failures
+        const msg = (err.message || '').toLowerCase();
+        if (msg.includes('private') || msg.includes('unavailable') || msg.includes('unsupported')) {
+          return false;
+        }
+        return isRetryableError(err);
+      },
+      label: `${platformLabel.toLowerCase()}-download-${jobId}`,
+    }
   );
 
+  // Step 4: Find output file
   const outputFile = findOutputFile(outBase);
   if (!outputFile || !fs.existsSync(outputFile)) {
-    throw new Error('Output file not found after YouTube download.');
+    throw new Error(`Output file not found after ${platformLabel} download.`);
   }
 
   const ext = path.extname(outputFile).toLowerCase() || '.mp4';
-  const title = metadata?.title || metadata?.fulltitle || 'YouTube Video';
+  const title = metadata?.title || metadata?.fulltitle || metadata?.description?.slice(0, 80) || `${platformLabel} Video`;
   const prettyName = sanitizeFilename(title) + ext;
 
   return { outputFile, prettyName };
 }
 
+// ── Job processor ─────────────────────────────────────────────────────────────
+
 /**
- * Process a download job in-process (no worker/queue).
- * Wrapped in the download concurrency limiter.
+ * Process a download job in-process.
+ * Wrapped in the download concurrency limiter (max 2 jobs at a time).
  */
 async function processJob(jobId) {
   const job = getJob(jobId);
   if (!job) return;
 
-  // Enqueue through the concurrency-limited download queue
   await enqueueDownload(async () => {
     try {
       updateJob(jobId, { status: 'processing', progress: 0 });
       ensureTempDir();
 
-      let result;
-      if (job.platform === 'instagram') {
-        result = await processInstagramJob(jobId, job);
-      } else if (job.platform === 'facebook') {
-        result = await processFacebookJob(jobId, job);
-      } else if (job.platform === 'youtube') {
-        result = await processYouTubeJob(jobId, job);
-      } else {
-         throw new Error(`Platform ${job.platform} is not supported.`);
+      const platformMap = {
+        instagram: 'Instagram',
+        facebook: 'Facebook',
+        youtube: 'YouTube',
+      };
+
+      const platformLabel = platformMap[job.platform];
+      if (!platformLabel) {
+        throw new Error(`Platform "${job.platform}" is not supported.`);
       }
 
-      updateJob(jobId, { progress: 100 });
+      const result = await processPlatformJob(jobId, job, platformLabel);
 
       const diskFileName = path.basename(result.outputFile);
       const downloadUrl = `/api/download/file/${jobId}/${encodeURIComponent(diskFileName)}`;
@@ -383,10 +291,12 @@ async function processJob(jobId) {
 
       logger.info(`[Download] Job ${jobId} completed → ${result.prettyName}`);
     } catch (err) {
-      logger.error(`[Download] Job ${jobId} failed: ${err.message}`);
+      logger.error(`[Download] Job ${jobId} failed: ${err.message}`, {
+        ytdlpStderr: err.ytdlpStderr || null,
+      });
       updateJob(jobId, {
         status: 'failed',
-        error: err.message,
+        error: err.message || 'Download failed. Please try again.',
       });
     }
   });
@@ -397,7 +307,7 @@ async function processJob(jobId) {
 const submitDownload = asyncHandler(async (req, res) => {
   const { url, platform, type, formatId } = req.body;
 
-  // Step 1: Always validate the URL first
+  // Step 1: Validate URL
   const urlCheck = validateUrl(url);
   if (!urlCheck.valid) throw new AppError(urlCheck.error, 400, 'INVALID_URL');
 
@@ -420,26 +330,27 @@ const submitDownload = asyncHandler(async (req, res) => {
     );
   }
 
-  // Step 3: All platforms → async job queue with yt-dlp
+  // Step 3: Create job and enqueue
   const jobId = uuidv4();
   const jobRecord = createJob(jobId, {
     url: urlCheck.url.href,
     platform: actualPlatform,
     type: actualType,
-    formatId,
+    formatId: formatId || null,
   });
 
-  jobRecord.formatId = formatId || null;
+  // Fire and forget — job processes in background via concurrency queue
+  processJob(jobId).catch((err) => {
+    logger.error(`[Controller] Unhandled error in job ${jobId}:`, err);
+  });
 
-  processJob(jobId).catch(() => {});
-
-  logger.info(`[Controller] Started async job ${jobId} — ${actualPlatform}/${actualType}`);
+  logger.info(`[Controller] Created job ${jobId} — ${actualPlatform}/${actualType}`);
 
   res.status(202).json({
     success: true,
     jobId,
     status: 'queued',
-    message: 'Your download has been started. Poll the status endpoint for updates.',
+    message: 'Download started. Poll the status endpoint for updates.',
     statusUrl: `${config.baseUrl}/api/download/${jobId}`,
   });
 });
@@ -497,8 +408,6 @@ const serveFile = asyncHandler(async (req, res) => {
     throw new AppError('File has already been deleted or expired.', 410, 'FILE_GONE');
   }
 
-  // Use the human-friendly filename (video title) for the download,
-  // NOT the UUID-based disk filename
   const prettyFilename = record.filename || path.basename(decodeURIComponent(filename));
 
   const stat = fs.statSync(filePath);
@@ -512,7 +421,7 @@ const serveFile = asyncHandler(async (req, res) => {
     ogg: 'audio/ogg',
   };
 
-  // RFC 5987 encoded filename for Unicode support + ASCII fallback
+  // RFC 5987 encoded filename for Unicode support
   const asciiName = prettyFilename.replace(/[^\x20-\x7E]/g, '_');
   res.setHeader(
     'Content-Disposition',
@@ -529,7 +438,7 @@ const serveFile = asyncHandler(async (req, res) => {
     if (!res.headersSent) res.status(500).end();
   });
 
-  readStream.on('end', async () => {
+  readStream.on('end', () => {
     logger.info(`[Controller] File served for job ${jobId}`);
   });
 

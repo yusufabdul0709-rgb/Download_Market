@@ -21,7 +21,18 @@ const config = {
 
   // ── yt-dlp ───────────────────────────────────────────────────────────────
   ytdlp: {
-    binary: process.env.YTDLP_PATH || path.resolve(__dirname, '..', 'bin', process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'),
+    // Resolution order:
+    // 1. YTDLP_PATH env var (explicit override)
+    // 2. Local bin/ directory (downloaded by postinstall script)
+    // 3. System PATH (apt-get install on Render)
+    binary: (() => {
+      if (process.env.YTDLP_PATH) return process.env.YTDLP_PATH;
+      const localBin = path.resolve(__dirname, '..', 'bin', process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
+      const fs = require('fs');
+      if (fs.existsSync(localBin)) return localBin;
+      // Fall back to system PATH (works if installed via apt-get on Render)
+      return 'yt-dlp';
+    })(),
     maxDurationSeconds:
       parseInt(process.env.MAX_DURATION_SECONDS, 10) || 3600,
     // Path to Netscape-format cookies.txt file exported from your browser.
