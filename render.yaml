@@ -24,3 +24,14 @@ services:
         sync: false
     # yt-dlp binary is downloaded automatically via postinstall script
     # ffmpeg-static is bundled via npm
+
+  - type: cron
+    name: download-market-keepalive
+    runtime: node
+    schedule: "*/8 * * * *"
+    buildCommand: "echo keepalive"
+    startCommand: |
+      curl -fsS "$BASE_URL/api/health" >/dev/null || true
+    envVars:
+      - key: BASE_URL
+        sync: false

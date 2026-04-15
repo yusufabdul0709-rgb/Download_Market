@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-const Loader = ({ text = 'Loading...', size = 'md' }) => {
+const Loader = ({ text = 'Fetching video...', size = 'md' }) => {
   const sizes = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',

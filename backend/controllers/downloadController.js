@@ -7,6 +7,7 @@ const os = require('os');
 const { spawn } = require('child_process');
 
 const { createJob, getJob, updateJob } = require('../services/jobStore');
+const downloadResultCache = require('../services/downloadResultCache');
 const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
@@ -287,6 +288,7 @@ async function processJob(jobId) {
         downloadUrl,
         filename: result.prettyName,
         diskFilename: diskFileName,
+        source: 'api1',
       });
 
       logger.info(`[Download] Job ${jobId} completed → ${result.prettyName}`);
@@ -296,7 +298,8 @@ async function processJob(jobId) {
       });
       updateJob(jobId, {
         status: 'failed',
-        error: err.message || 'Download failed. Please try again.',
+        error: err.message || 'Server busy, try again later',
+        source: 'api1/api2',
       });
     }
   });
@@ -331,9 +334,27 @@ const submitDownload = asyncHandler(async (req, res) => {
   }
 
   // Step 3: Create job and enqueue
+  const cacheInput = {
+    url: urlCheck.url.href,
+    platform: actualPlatform,
+    type: actualType,
+    formatId: formatId || null,
+  };
+
+  const cached = downloadResultCache.get(cacheInput);
+  if (cached && fs.existsSync(cached.filePath)) {
+    return res.status(200).json({
+      success: true,
+      cached: true,
+      status: 'completed',
+      message: 'Using cached download result.',
+      ...cached,
+    });
+  }
+
   const jobId = uuidv4();
   const jobRecord = createJob(jobId, {
-    url: urlCheck.url.href,
+    url: cacheInput.url,
     platform: actualPlatform,
     type: actualType,
     formatId: formatId || null,
@@ -383,10 +404,12 @@ const getJobStatus = asyncHandler(async (req, res) => {
   if (record.status === 'completed') {
     response.downloadUrl = record.downloadUrl;
     response.filename = record.filename;
+    response.source = record.source || 'api1';
   }
 
   if (record.status === 'failed') {
-    response.error = record.error;
+    response.message = record.error;
+    response.source = record.source || 'api1/api2';
   }
 
   res.json(response);
@@ -440,6 +463,19 @@ const serveFile = asyncHandler(async (req, res) => {
 
   readStream.on('end', () => {
     logger.info(`[Controller] File served for job ${jobId}`);
+    downloadResultCache.set(
+      {
+        url: record.url,
+        platform: record.platform,
+        type: record.type,
+        formatId: record.formatId || null,
+      },
+      {
+        downloadUrl: record.downloadUrl,
+        filename: record.filename,
+        filePath: record.filePath,
+      }
+    );
   });
 
   readStream.pipe(res);

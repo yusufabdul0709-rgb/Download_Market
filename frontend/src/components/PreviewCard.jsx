@@ -77,7 +77,7 @@ const PreviewCard = ({ data, isVertical = false }) => {
             src={displayImage}
             alt={displayTitle}
             className="w-full h-full object-cover"
-            loading="eager"
+            loading="lazy"
             onError={(e) => {
               e.target.style.display = 'none';
             }}

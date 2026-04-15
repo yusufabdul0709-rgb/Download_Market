@@ -8,6 +8,9 @@ const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
+const cron = require('node-cron');
+const axios = require('axios');
 
 const config = require('./config');
 const corsMiddleware = require('./middlewares/cors');
@@ -40,6 +43,21 @@ app.use(corsMiddleware);
 // ── Body parsing
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(compression());
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const elapsed = Date.now() - start;
+    logger.info('[HTTP] request complete', {
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs: elapsed,
+    });
+  });
+  next();
+});
 
 // ── Request logging
 app.use(
@@ -103,7 +121,8 @@ if (fs.existsSync(frontendDist)) {
 app.use((_req, res) => {
   res.status(404).json({
     success: false,
-    error: 'Route not found.',
+    message: 'Video not found',
+    source: 'api1/api2',
     code: 'NOT_FOUND',
   });
 });
@@ -119,6 +138,19 @@ async function bootstrap() {
 
   // 2. Start the cleanup cron job
   startCleanupScheduler();
+
+  if (!config.isDev && config.baseUrl.startsWith('http')) {
+    cron.schedule('*/8 * * * *', async () => {
+      const healthUrl = `${config.baseUrl}/api/health`;
+      try {
+        await axios.get(healthUrl, { timeout: 9_000 });
+        logger.debug(`[KeepAlive] Ping success: ${healthUrl}`);
+      } catch (err) {
+        logger.warn('[KeepAlive] Ping failed', { message: err.message, url: healthUrl });
+      }
+    });
+    logger.info('[KeepAlive] Scheduler started (every 8 minutes)');
+  }
 
   // 3. Start HTTP server
   const server = http.createServer(app);

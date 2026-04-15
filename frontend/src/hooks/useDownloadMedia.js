@@ -14,7 +14,7 @@ const MAX_POLL_ATTEMPTS = 90; // 3 minutes max
  */
 function getPreviewStatusMessage(secs) {
   if (secs < 5) {
-    return 'Fetching media info...';
+    return 'Fetching video...';
   }
   if (secs < 12) {
     const remaining = 12 - secs;
@@ -228,7 +228,7 @@ const useDownloadMedia = () => {
 
       try {
         const result = await checkDownloadStatus(jobId);
-        const { status, downloadUrl, progress, error, filename } = result;
+        const { status, downloadUrl, progress, error, message, filename } = result;
 
         if (status === 'completed' && downloadUrl) {
           setDownloadState((prev) => ({
@@ -248,10 +248,10 @@ const useDownloadMedia = () => {
           setDownloadState((prev) => ({
             ...prev,
             status: 'failed',
-            error: error || 'Download failed on server.',
+            error: message || error || 'Download failed on server.',
             activeFormat: null,
           }));
-          toast.error(error || 'Download failed. Please try again.');
+          toast.error(message || error || 'Download failed. Please try again.');
           return;
         }
 

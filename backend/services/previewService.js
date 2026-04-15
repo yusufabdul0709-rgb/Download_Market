@@ -1,6 +1,6 @@
 'use strict';
 
-const { fetchMetadata } = require('../utils/ytdlp');
+const { fetchMetadataWithFallback } = require('../utils/ytdlp');
 const { enqueuePreview } = require('./concurrencyQueue');
 const logger = require('../utils/logger');
 const cache = require('./previewCache');
@@ -187,29 +187,30 @@ function normaliseInstagramData(raw, url) {
  */
 async function fetchInstagramData(url) {
   try {
-    const raw = await fetchMetadata(url);
+    const { data: raw } = await fetchMetadataWithFallback(url);
     return normaliseInstagramData(raw, url);
   } catch (err) {
     logger.error(`[Preview] Instagram yt-dlp extraction failed: ${err.message}`);
 
     // Detect login/cookie requirement errors
     const msg = (err.message || '').toLowerCase();
-    let userMessage = 'Could not fetch Instagram media. The post might be private or invalid.';
+    let userMessage = 'Video not found';
     let statusCode = 404;
 
     if (msg.includes('cookies') || msg.includes('logged-in') || msg.includes('login') || msg.includes('authentication')) {
-      userMessage = 'Instagram requires authentication. Please set up cookies for yt-dlp (see YTDLP_COOKIES_PATH in .env) to download Instagram content.';
+      userMessage = 'Private or restricted content';
       statusCode = 401;
     } else if (msg.includes('not found') || msg.includes('404')) {
-      userMessage = 'This Instagram post was not found. It may have been deleted or the URL is incorrect.';
+      userMessage = 'Video not found';
     } else if (msg.includes('rate') || msg.includes('429') || msg.includes('too many')) {
-      userMessage = 'Instagram is rate-limiting requests. Please wait a few minutes and try again.';
+      userMessage = 'Platform blocked request';
       statusCode = 429;
     }
 
     const error = new Error(userMessage);
     error.statusCode = statusCode;
     error.isOperational = true;
+    error.source = 'api1/api2';
     throw error;
   }
 }
@@ -233,18 +234,23 @@ async function getMediaPreview(url, platform) {
     return enqueuePreview(async () => {
       try {
         let preview;
+        let source = 'api1';
         if (platform === 'instagram') {
           preview = await fetchInstagramData(url);
         } else if (platform === 'facebook') {
-          const raw = await fetchMetadata(url);
+          const metadata = await fetchMetadataWithFallback(url);
+          const raw = metadata.data;
+          source = metadata.source;
           preview = normaliseFacebookData(raw, url);
         } else if (platform === 'youtube') {
-          const raw = await fetchMetadata(url);
+          const metadata = await fetchMetadataWithFallback(url);
+          const raw = metadata.data;
+          source = metadata.source;
           preview = normaliseYouTubeData(raw, url);
         } else {
           throw new Error(`Platform ${platform} is not supported.`);
         }
-        return preview;
+        return { ...preview, source };
       } catch (err) {
       if (err.isOperational) throw err;
       
@@ -256,10 +262,11 @@ async function getMediaPreview(url, platform) {
 
       // ── Unavailable / deleted / invalid ─────────────────────────────────
       if (lowerMsg.includes('not found') || lowerMsg.includes('unavailable') || lowerMsg.includes('404')) {
-        const error = new Error('Content not found. The URL may have been deleted or is invalid.');
+        const error = new Error('Video not found');
         error.statusCode = 404;
         error.code = 'NOT_FOUND';
         error.isOperational = true;
+        error.source = 'api1/api2';
         throw error;
       }
 
@@ -272,64 +279,62 @@ async function getMediaPreview(url, platform) {
         lowerMsg.includes('sign in to confirm you\'ve been granted access') ||
         (lowerMsg.includes('sign in') && !lowerMsg.includes('bot'))
       ) {
-        let text = 'This content is private or age-restricted. Please make sure the URL is publicly accessible.';
-        if (platform === 'facebook' || lowerMsg.includes('registered users')) {
-           text = 'This Facebook post requires a login (it is either private or locked by Facebook). Please provide a Public post link instead.';
-        }
+        let text = 'Private or restricted content';
         const error = new Error(text);
         error.statusCode = 403;
         error.code = 'PRIVATE_CONTENT';
         error.isOperational = true;
+        error.source = 'api1/api2';
         throw error;
       }
 
       // ── Bot protection / rate limiting ─────────────────────────────────
       if (lowerMsg.includes('bot') || lowerMsg.includes('429') || lowerMsg.includes('too many requests')) {
-        const error = new Error(
-          'Service is temporarily blocking requests due to anti-bot protection. Please try again later.'
-        );
+        const error = new Error('Platform blocked request');
         error.statusCode = 429;
         error.code = 'RATE_LIMITED';
         error.isOperational = true;
+        error.source = 'api1/api2';
         throw error;
       }
 
       // ── Timeout ────────────────────────────────────────────────────────
       if (lowerMsg.includes('timed out') || lowerMsg.includes('timeout')) {
-        const error = new Error('Request timed out. The server took too long to respond. Please try again.');
+        const error = new Error('Server busy, try again later');
         error.statusCode = 504;
         error.code = 'TIMEOUT';
         error.isOperational = true;
+        error.source = 'api1/api2';
         throw error;
       }
 
       // ── Missing yt-dlp binary ──────────────────────────────────────────
       if (lowerMsg.includes('failed to start yt-dlp') || lowerMsg.includes('enoent')) {
-        const error = new Error('Download service is not available. Please ensure dependencies are configured.');
+        const error = new Error('Server busy, try again later');
         error.statusCode = 503;
         error.code = 'SERVICE_UNAVAILABLE';
         error.isOperational = true;
+        error.source = 'api1/api2';
         throw error;
       }
 
       // ── Extractor / Unhandled Errors ───────────────────────────────────
       if (lowerMsg.includes('issues?q=') || lowerMsg.includes('unsupported') || lowerMsg.includes('extractorerror')) {
-        let userMsg = 'Could not extract media info. The link might be unsupported or requires login.';
-        if (platform === 'facebook' || url.includes('facebook:')) {
-          userMsg = 'Facebook blocks this type of link. If this is a "share" link, try copying the direct post link from the address bar instead, and ensure the post is Public.';
-        }
+        let userMsg = 'Platform blocked request';
         const error = new Error(userMsg);
         error.statusCode = 400;
         error.code = 'EXTRACTOR_ERROR';
         error.isOperational = true;
+        error.source = 'api1/api2';
         throw error;
       }
 
       // ── Generic fallback ───────────────────────────────────────────────
-      const error = new Error(`Could not fetch media info: ${message.slice(-80) || 'Unknown error'}. Please check the URL and try again.`);
+      const error = new Error('Server busy, try again later');
       error.statusCode = 500;
       error.code = 'FETCH_FAILED';
       error.isOperational = true;
+      error.source = 'api1/api2';
       throw error;
       }
     });

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Download, Code, Mail, Heart } from 'lucide-react';
+import { Download, Heart } from 'lucide-react';
 import { YoutubeIcon as Youtube, InstagramIcon as Instagram, FacebookIcon as Facebook } from './BrandIcons';
 
 const Footer = () => {
@@ -100,6 +100,17 @@ const Footer = () => {
           <p className="text-text-muted text-sm">
             © {currentYear} DownloadMarket. All rights reserved.
           </p>
+          <div className="flex items-center gap-4 text-sm">
+            <Link to="/privacy-policy" className="text-text-muted hover:text-primary transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="text-text-muted hover:text-primary transition-colors">
+              Terms
+            </Link>
+            <Link to="/contact" className="text-text-muted hover:text-primary transition-colors">
+              Contact
+            </Link>
+          </div>
           <p className="text-text-muted text-sm flex items-center gap-1">
             Made with <Heart size={14} className="text-secondary fill-secondary" /> for the internet
           </p>

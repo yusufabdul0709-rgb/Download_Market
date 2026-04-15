@@ -79,6 +79,18 @@ function baseArgs() {
   return args;
 }
 
+function fallbackArgs() {
+  const args = baseArgs();
+  const oldIndex = args.indexOf('youtube:player_client=android,web,default');
+  if (oldIndex > -1) {
+    args[oldIndex] = 'youtube:player_client=ios,android,web';
+  } else {
+    args.push('--extractor-args', 'youtube:player_client=ios,android,web');
+  }
+  args.push('--sleep-interval', '3', '--max-sleep-interval', '6');
+  return args;
+}
+
 // ── URL normalisation ─────────────────────────────────────────────────────────
 
 /**
@@ -108,6 +120,7 @@ async function normaliseMediaUrl(url) {
     if (hostname.includes('facebook.com') && parsed.pathname.startsWith('/share/')) {
       try {
         const res = await axios.get(url, {
+          timeout: 9_000,
           maxRedirects: 10,
           headers: {
             'User-Agent': config.ytdlp.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -215,7 +228,7 @@ async function fetchMetadata(url) {
       ];
 
       const json = await runYtdlp(args, {
-        timeoutMs: 45_000,
+        timeoutMs: 9_000,
       });
 
       try {
@@ -232,6 +245,44 @@ async function fetchMetadata(url) {
       label: 'fetchMetadata',
     }
   );
+}
+
+async function fetchMetadataWithFallback(url) {
+  const normalisedUrl = await normaliseMediaUrl(url);
+
+  const runExtractor = async (source, argsFactory) => {
+    const data = await retryWithBackoff(
+      async () => {
+        const args = [...argsFactory(), '-J', normalisedUrl];
+        const json = await runYtdlp(args, { timeoutMs: 9_000 });
+        return JSON.parse(json);
+      },
+      {
+        maxRetries: 2,
+        initialDelay: 2_000,
+        maxDelay: 8_000,
+        shouldRetry: isRetryableError,
+        label: `fetchMetadata-${source}`,
+      }
+    );
+    return { data, source };
+  };
+
+  try {
+    return await runExtractor('api1', baseArgs);
+  } catch (api1Error) {
+    logger.warn('[yt-dlp] api1 metadata fetch failed, trying api2 fallback', {
+      error: api1Error.message,
+    });
+    try {
+      return await runExtractor('api2', fallbackArgs);
+    } catch (api2Error) {
+      const combined = new Error(api2Error.message || api1Error.message || 'Metadata fetch failed.');
+      combined.api1Error = api1Error;
+      combined.api2Error = api2Error;
+      throw combined;
+    }
+  }
 }
 
 /**
@@ -280,4 +331,12 @@ function parseProgress(line) {
   return null;
 }
 
-module.exports = { runYtdlp, fetchMetadata, buildDownloadArgs, parseProgress, normaliseMediaUrl, baseArgs };
+module.exports = {
+  runYtdlp,
+  fetchMetadata,
+  fetchMetadataWithFallback,
+  buildDownloadArgs,
+  parseProgress,
+  normaliseMediaUrl,
+  baseArgs,
+};

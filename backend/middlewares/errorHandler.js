@@ -30,7 +30,8 @@ function errorHandler(err, req, res, next) {
 
   res.status(statusCode).json({
     success: false,
-    error: err.isOperational ? err.message : 'An internal server error occurred.',
+    message: err.isOperational ? err.message : 'Server busy, try again later',
+    source: err.source || 'api1/api2',
     code,
     ...(process.env.NODE_ENV === 'development' && !err.isOperational
       ? { stack: err.stack }
