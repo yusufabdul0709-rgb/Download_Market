@@ -24,6 +24,8 @@ const getVideo = require('./services/downloader');
 
 const { startCleanupScheduler, ensureTempDir } = require('./services/cleanupService');
 const logger = require('./utils/logger');
+const { setVideoProcessor, startInlineWorker, isRedisQueueEnabled } = require('./queue/jobQueue');
+const { processVideoJob } = require('./services/queueDownloadProcessor');
 
 // ─── App Setup ────────────────────────────────────────────────────────────────
 
@@ -156,6 +158,11 @@ async function bootstrap() {
 
   // 2. Start the cleanup cron job
   startCleanupScheduler();
+
+  setVideoProcessor(processVideoJob);
+  if (!isRedisQueueEnabled()) {
+    await startInlineWorker();
+  }
 
   if (!config.isDev && config.baseUrl.startsWith('http')) {
     cron.schedule('*/8 * * * *', async () => {
