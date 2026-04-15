@@ -5,80 +5,54 @@ import { Film, Video, Clock } from 'lucide-react';
 import URLInput from '../../components/URLInput';
 import IframeAdBanner from '../../components/IframeAdBanner';
 import PreviewCard from '../../components/PreviewCard';
+import DownloadOptions from '../../components/DownloadOptions';
 import ErrorMessage from '../../components/ErrorMessage';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import HowToDownload from '../../components/HowToDownload';
 import ToolFeatures from '../../components/ToolFeatures';
 import SEOHead from '../../components/SEOHead';
 import SEOFaq from '../../components/SEOFaq';
+import useDownloadMedia from '../../hooks/useDownloadMedia';
 import usePopunder from '../../hooks/usePopunder';
-import { startDownload, triggerBrowserDownload } from '../../services/mediaService';
-import toast from 'react-hot-toast';
 
 const YoutubeVideo = () => {
   const [url, setUrl] = useState('');
   const location = useLocation();
+  const {
+    preview,
+    previewLoading,
+    previewError,
+    previewStatusMessage,
+    fetchMediaPreview,
+    downloadState,
+    startFormatDownload,
+    resetAll,
+  } = useDownloadMedia();
   const triggerPopunder = usePopunder();
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [mediaData, setMediaData] = useState(null);
 
   useEffect(() => {
     if (location.state?.url) {
       setUrl(location.state.url);
-      fetchMediaData(location.state.url);
+      fetchMediaPreview(location.state.url);
     }
-  }, [location.state]);
+  }, [location.state, fetchMediaPreview]);
 
   const handleFetch = (inputUrl) => {
-    fetchMediaData(inputUrl);
+    const targetUrl = inputUrl || url;
+    fetchMediaPreview(targetUrl);
   };
 
   const handleUrlChange = (newUrl) => {
     setUrl(newUrl);
-    if (!newUrl.trim()) resetState();
+    if (!newUrl.trim()) resetAll();
   };
 
-  const resetState = () => {
-    setLoading(false);
-    setError(null);
-    setMediaData(null);
-  };
-
-  const fetchMediaData = async (targetUrl) => {
-    if (!targetUrl?.trim()) {
-      toast.error('Please enter a URL');
-      return;
-    }
-    
-    setLoading(true);
-    setError(null);
-    setMediaData(null);
-    
-    try {
-      const data = await startDownload({ url: targetUrl.trim(), platform: 'youtube' });
-      if (data && data.success) {
-        setMediaData(data);
-        toast.success(`Media info loaded via ${data.provider_used || 'Fallback API'}`);
-      } else {
-        throw new Error('Failed to retrieve extraction link');
-      }
-    } catch (err) {
-      const message = err.response?.data?.error || err.message || 'Failed to fetch media.';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadLink = (downloadUrl) => {
+  const handleDownload = (downloadUrl, format) => {
     const adFired = triggerPopunder();
     if (adFired) {
-      setTimeout(() => triggerBrowserDownload(downloadUrl, 'video.mp4'), 2000);
+      setTimeout(() => startFormatDownload(downloadUrl, format), 2000);
     } else {
-      triggerBrowserDownload(downloadUrl, 'video.mp4');
+      startFormatDownload(downloadUrl, format);
     }
   };
 
@@ -112,7 +86,7 @@ const YoutubeVideo = () => {
             value={url}
             onChange={handleUrlChange}
             onSubmit={handleFetch}
-            loading={loading}
+            loading={previewLoading}
             placeholder="Paste YouTube Video URL here..."
             id="youtube-url-input"
             buttonColor="bg-red-500 hover:bg-red-600"
@@ -123,75 +97,56 @@ const YoutubeVideo = () => {
           <IframeAdBanner id="ad-yt-inline" />
         </div>
 
+        {/* Error */}
         <AnimatePresence>
-          {error && (
+          {previewError && (
             <div className="mb-6">
-              <ErrorMessage message={error} onRetry={() => handleFetch(url)} onDismiss={resetState} />
+              <ErrorMessage
+                message={previewError}
+                onRetry={() => handleFetch(url)}
+                onDismiss={resetAll}
+              />
             </div>
           )}
         </AnimatePresence>
 
-        {loading && (
+        {/* Loading */}
+        {previewLoading && (
           <div className="max-w-md mx-auto w-full space-y-4">
-            <SkeletonLoader type="vertical-card" statusMessage="Fethcing API Extractors..." />
+            <SkeletonLoader type="vertical-card" statusMessage={previewStatusMessage} />
           </div>
         )}
 
+        {/* Results */}
         <AnimatePresence>
-          {mediaData && !loading && (
+          {preview && !previewLoading && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
               <div id="ad-before-download" className="mb-2">
                 <IframeAdBanner id="ad-yt-pre-result" />
               </div>
 
               <div className="max-w-sm mx-auto bg-white rounded-2xl shadow-xl shadow-red-500/10 border border-slate-100 overflow-hidden flex flex-col transform transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-500/20">
-                {/* Fallback mock preview object for PreviewCard compatibility */}
-				<PreviewCard 
-                  data={{
-                    title: mediaData.title,
-                    thumbnail: mediaData.thumbnail_url,
-                    duration: mediaData.duration,
-                    platform: 'youtube',
-                    type: mediaData.source === 'youtube-shorts' ? 'shorts' : 'video'
-                  }} 
-                  isVertical={mediaData.source === 'youtube-shorts'} 
-                />
+                <PreviewCard data={preview} isVertical={preview.type === 'shorts'} />
                 
-                <div className="p-4 sm:p-5 mt-1 space-y-2">
-                   {mediaData.download_links && mediaData.download_links.length > 0 ? (
-                      mediaData.download_links.map((link, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleDownloadLink(link.url)}
-                          className={`w-full py-2.5 px-4 rounded-xl font-semibold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 ${
-                            link.quality.includes('1080') || link.quality === 'HD'
-                              ? 'bg-red-500 text-white hover:bg-red-600 shadow-md shadow-red-500/20'
-                              : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
-                          }`}
-                        >
-                          <Video size={18} />
-                          Download {link.quality} {link.type === 'audio' ? 'Audio' : ''}
-                        </button>
-                      ))
-                   ) : (
-                     <p className="text-sm text-center text-red-500 font-medium">No valid download links found.</p>
-                   )}
+                <div className="p-4 sm:p-5 mt-1">
+                  <DownloadOptions
+                    formats={preview.formats}
+                    url={url}
+                    onDownload={handleDownload}
+                    downloadState={downloadState}
+                  />
                 </div>
                 
                 <div className="px-5 py-4 bg-slate-50 border-t border-slate-100/60">
                   <h3 className="font-semibold text-slate-800 text-sm leading-snug mb-3">
-                    {mediaData.title || "Extracted Video"}
+                    {preview.title}
                   </h3>
-                   <div className="flex items-center gap-2 text-xs font-medium">
-                      <span className="px-2 py-1 bg-red-100 text-red-600 rounded-md">
-                        {mediaData.provider_used}
-                      </span>
-                      {mediaData.served_from_cache && (
-                         <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded-md">
-                           Cached
-                         </span>
-                      )}
-                   </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white shadow-sm border border-slate-100">
+                       <Clock size={14} className="text-red-400" />
+                       <span>{preview.duration > 0 ? `${preview.duration}s length` : 'Video'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -202,9 +157,31 @@ const YoutubeVideo = () => {
           )}
         </AnimatePresence>
 
+        {/* Empty state */}
+        {!preview && !previewLoading && !previewError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white border border-red-100 shadow-lg shadow-red-500/5 flex items-center justify-center">
+              <Video size={36} className="text-red-500/80" />
+            </div>
+            <h3 className="text-text-primary text-lg font-bold mb-2">No YouTube Video loaded</h3>
+            <p className="text-text-muted text-sm max-w-md mx-auto">
+              Paste a YouTube Video or Shorts URL above and click Fetch to preview and download.
+            </p>
+          </motion.div>
+        )}
+
         <HowToDownload platform="YouTube Video" />
         <ToolFeatures platform="YouTube Video Downloader" />
         <SEOFaq platform="YouTube Video" />
+
+        <div id="ad-footer" className="mt-8">
+          <IframeAdBanner id="ad-yt-footer" />
+        </div>
+
       </div>
     </div>
   );

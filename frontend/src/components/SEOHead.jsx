@@ -12,7 +12,7 @@ const SEOHead = ({ title, description }) => {
     // Update title
     document.title = title
       ? `${title} | Download Market`
-      : 'Download Market - Free YouTube & Instagram Video Downloader';
+      : 'Download Market — Free YouTube, Facebook & Instagram Video Downloader';
 
     // Update meta description
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -23,7 +23,7 @@ const SEOHead = ({ title, description }) => {
     }
     metaDesc.content =
       description ||
-      'Download Market - Download videos, reels, shorts, posts and audio from YouTube and Instagram for free. Fast, safe, HD quality.';
+      'Download Market — Download videos, reels, shorts, posts, and audio from YouTube, Facebook, and Instagram for free. Fast, safe, HD quality.';
 
     // Set canonical URL
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -45,7 +45,7 @@ const SEOHead = ({ title, description }) => {
       tag.content = content;
     };
     setOG('og:title', title || 'Download Market');
-    setOG('og:description', description || 'Free YouTube & Instagram downloader');
+    setOG('og:description', description || 'Free YouTube, Facebook & Instagram downloader');
     setOG('og:type', 'website');
     setOG('og:url', `${window.location.origin}${location.pathname}`);
 
@@ -66,7 +66,7 @@ const SEOHead = ({ title, description }) => {
           "@type": "WebApplication",
           "name": title || "Download Market",
           "url": `${window.location.origin}${location.pathname}`,
-          "description": description || "Download YouTube and Instagram videos for free in HD.",
+          "description": description || "Download YouTube, Facebook, and Instagram videos for free in HD.",
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "All",
           "offers": {

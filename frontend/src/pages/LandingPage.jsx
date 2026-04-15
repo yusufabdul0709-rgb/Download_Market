@@ -175,8 +175,8 @@ const LandingPage = () => {
   return (
     <div className="relative overflow-hidden">
       <SEOHead
-        title="Facebook & Instagram Reels Downloader — Free & Fast"
-        description="Download Facebook and Instagram videos, reels, and audio for free in HD. No login required. Fast and safe online downloader."
+        title="Free YouTube, Facebook & Instagram Video Downloader — HD & Fast"
+        description="Download YouTube videos, Facebook reels, and Instagram content for free in HD. No login required. Fast and safe online downloader."
       />
       {/* Background effects */}
       <div className="absolute inset-0 animated-gradient opacity-80" />
@@ -208,8 +208,9 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-text-primary"
           >
-            Free <span className="text-blue-600">Facebook</span> & 
-             <span className="gradient-text-alt"> Reels Downloader</span>
+            Free <span className="text-red-600">YouTube</span>,{' '}
+            <span className="text-blue-600">Facebook</span> &{' '}
+             <span className="gradient-text-alt">Instagram Downloader</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -217,7 +218,7 @@ const LandingPage = () => {
             variants={itemVariants}
             className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-6 leading-relaxed font-medium"
           >
-            Download your favorite Facebook and Instagram Reels, Photos, and Videos in high quality.
+            Download your favorite YouTube, Facebook, and Instagram Videos, Reels, and Shorts in high quality.
           </motion.p>
         </motion.div>
       </section>
@@ -315,14 +316,14 @@ const LandingPage = () => {
       {/* How to Download */}
       <section className="relative py-16 px-4 sm:px-6 z-10">
         <div className="max-w-6xl mx-auto">
-          <HowToDownload platform="Instagram & Media" />
+          <HowToDownload platform="Videos & Reels" />
         </div>
       </section>
 
       {/* SEO FAQ */}
       <section className="relative py-16 px-4 sm:px-6 z-10 pb-24 bg-slate-50/50 border-t border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <SEOFaq platform="Free Downloader" />
+          <SEOFaq platform="Video Downloader" />
         </div>
       </section>
     </div>

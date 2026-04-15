@@ -92,7 +92,7 @@ const useDownloadMedia = () => {
     }
 
     if (!isValidURL(url.trim())) {
-      setPreviewError('Unsupported URL. Please enter a valid Facebook or Instagram URL.');
+      setPreviewError('Unsupported URL. Please enter a valid YouTube, Facebook, or Instagram URL.');
       toast.error('Unsupported URL format');
       return;
     }

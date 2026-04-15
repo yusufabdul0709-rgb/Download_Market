@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Download, Code, Mail, Heart } from 'lucide-react';
-import { YoutubeIcon as Youtube, InstagramIcon as Instagram } from './BrandIcons';
+import { YoutubeIcon as Youtube, InstagramIcon as Instagram, FacebookIcon as Facebook } from './BrandIcons';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -8,9 +8,9 @@ const Footer = () => {
   return (
     <footer className="relative mt-auto border-t border-primary/8 bg-white/60 backdrop-blur-sm">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
                 <Download size={20} className="text-white" />
@@ -20,7 +20,7 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-text-muted text-sm leading-relaxed max-w-xs">
-              The fastest and most reliable way to download your favorite videos and media from YouTube & Instagram.
+              The fastest and most reliable way to download your favorite videos and media from YouTube, Facebook & Instagram.
             </p>
           </div>
 
@@ -39,6 +39,31 @@ const Footer = () => {
               <li>
                 <Link to="/youtube/shorts" className="text-text-muted text-sm hover:text-primary transition-colors">
                   Shorts Downloader
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Facebook Links */}
+          <div>
+            <h4 className="flex items-center gap-2 text-text-primary font-semibold mb-4">
+              <Facebook size={18} className="text-blue-600" />
+              Facebook
+            </h4>
+            <ul className="space-y-2.5">
+              <li>
+                <Link to="/facebook/reels" className="text-text-muted text-sm hover:text-primary transition-colors">
+                  Reels Downloader
+                </Link>
+              </li>
+              <li>
+                <Link to="/facebook/post" className="text-text-muted text-sm hover:text-primary transition-colors">
+                  Post Downloader
+                </Link>
+              </li>
+              <li>
+                <Link to="/facebook/audio" className="text-text-muted text-sm hover:text-primary transition-colors">
+                  Audio Extractor
                 </Link>
               </li>
             </ul>
@@ -65,25 +90,6 @@ const Footer = () => {
                 <Link to="/instagram/audio" className="text-text-muted text-sm hover:text-primary transition-colors">
                   Audio Extractor
                 </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h4 className="text-text-primary font-semibold mb-4">Support</h4>
-            <ul className="space-y-2.5">
-              <li>
-                <a href="#" className="text-text-muted text-sm hover:text-primary transition-colors flex items-center gap-2">
-                  <Mail size={14} />
-                  Contact Us
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-text-muted text-sm hover:text-primary transition-colors flex items-center gap-2">
-                  <Code size={14} />
-                  GitHub
-                </a>
               </li>
             </ul>
           </div>

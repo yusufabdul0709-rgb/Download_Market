@@ -8,7 +8,7 @@ import FacebookReels from './pages/facebook/FacebookReels';
 import FacebookPost from './pages/facebook/FacebookPost';
 import FacebookAudio from './pages/facebook/FacebookAudio';
 import YoutubeVideo from './pages/youtube/YoutubeVideo';
-import YoutubeShorts from './pages/youtube/YoutubeShorts';
+import YoutubeShorts from './pages/youtube/YoutubeShortsPage';
 import NotFound from './pages/NotFound';
 
 function App() {

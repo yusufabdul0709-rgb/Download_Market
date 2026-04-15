@@ -48,6 +48,73 @@ function normaliseFacebookData(raw, url) {
 }
 
 /**
+ * Normalise raw yt-dlp JSON metadata for YouTube content.
+ */
+function normaliseYouTubeData(raw, url) {
+  const isShorts = url.includes('/shorts/') || (raw.duration && raw.duration < 62);
+
+  // Build quality-sorted format list from yt-dlp output
+  const seen = new Set();
+  const formats = (raw.formats || [])
+    .filter(f => {
+      // Only keep formats with both video+audio, or standalone audio
+      if (!f.url) return false;
+      // Prefer pre-merged (has both video and audio codecs)
+      const hasVideo = f.vcodec && f.vcodec !== 'none';
+      const hasAudio = f.acodec && f.acodec !== 'none';
+      return (hasVideo && hasAudio) || (!hasVideo && hasAudio);
+    })
+    .map(f => {
+      const hasVideo = f.vcodec && f.vcodec !== 'none';
+      const label = hasVideo
+        ? (f.format_note || `${f.height || '?'}p`)
+        : 'Audio Only';
+      return {
+        quality: label,
+        formatId: f.format_id,
+        label: hasVideo ? `${label} (${f.ext || 'mp4'})` : `Audio (${f.ext || 'm4a'})`,
+        format: hasVideo ? 'mp4' : f.ext || 'm4a',
+        height: f.height || 0,
+        type: hasVideo ? 'video' : 'audio',
+      };
+    })
+    // Deduplicate by quality label
+    .filter(f => {
+      const key = `${f.quality}-${f.type}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    // Sort: highest resolution first for video, audio at end
+    .sort((a, b) => {
+      if (a.type === 'audio' && b.type !== 'audio') return 1;
+      if (a.type !== 'audio' && b.type === 'audio') return -1;
+      return (b.height || 0) - (a.height || 0);
+    })
+    .slice(0, 6);
+
+  // Always add a "best" option at the top and an audio extraction option
+  const result = [
+    { quality: 'Best', formatId: 'best', label: 'Best Quality (MP4)', format: 'mp4' },
+    ...formats,
+  ];
+
+  // Add MP3 extraction if not already present
+  if (!formats.some(f => f.type === 'audio')) {
+    result.push({ quality: '128kbps', formatId: 'audio', format: 'mp3', label: 'Extract MP3' });
+  }
+
+  return {
+    platform: 'youtube',
+    type: isShorts ? 'shorts' : 'video',
+    title: raw.title || raw.fulltitle || 'YouTube Video',
+    thumbnail: raw.thumbnail || raw.thumbnails?.[raw.thumbnails.length - 1]?.url || null,
+    duration: raw.duration || null,
+    formats: result,
+  };
+}
+
+/**
  * Normalise raw yt-dlp JSON metadata into a clean preview object for Instagram.
  * yt-dlp natively supports Instagram posts, reels, and stories.
  *
@@ -171,6 +238,9 @@ async function getMediaPreview(url, platform) {
         } else if (platform === 'facebook') {
           const raw = await fetchMetadata(url);
           preview = normaliseFacebookData(raw, url);
+        } else if (platform === 'youtube') {
+          const raw = await fetchMetadata(url);
+          preview = normaliseYouTubeData(raw, url);
         } else {
           throw new Error(`Platform ${platform} is not supported.`);
         }

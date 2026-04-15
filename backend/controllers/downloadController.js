@@ -11,7 +11,7 @@ const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
 const { buildDownloadArgs, parseProgress, fetchMetadata, normaliseMediaUrl } = require('../utils/ytdlp');
-const { getMediaData } = require('../services/videoService');
+// videoService removed — all platforms now use yt-dlp via async job queue
 const axios = require('axios');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
@@ -293,6 +293,56 @@ async function processFacebookJob(jobId, job) {
 }
 
 /**
+ * Handle YouTube specific logic using yt-dlp.
+ */
+async function processYouTubeJob(jobId, job) {
+  const { url: originalUrl, type } = job;
+  const url = await normaliseMediaUrl(originalUrl);
+  const outBase = path.join(TEMP_DIR, jobId);
+
+  let metadata;
+  try {
+    metadata = await fetchMetadata(url);
+  } catch (err) {
+    throw new Error(`YouTube metadata fetch failed: ${err.message}`);
+  }
+
+  updateJob(jobId, { progress: 10 });
+
+  const formatId = job.formatId || null;
+  const outTemplate = `${outBase}.%(ext)s`;
+
+  const args = [];
+  args.push('--no-playlist', '--no-warnings', '--no-check-certificates');
+
+  if (formatId === 'audio' || type === 'audio') {
+    args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, url);
+  } else {
+    // Download best available or specific format
+    const fId = (formatId && formatId !== 'best') ? `${formatId}+bestaudio/best` : 'bestvideo+bestaudio/best';
+    args.push('-f', fId, '--merge-output-format', 'mp4', '-o', outTemplate, url);
+  }
+
+  updateJob(jobId, { progress: 20 });
+
+  await retryWithBackoff(
+    () => runDownload(args, jobId),
+    { maxRetries: 1, initialDelay: 5000, shouldRetry: isRetryableError, label: `yt-download-${jobId}` }
+  );
+
+  const outputFile = findOutputFile(outBase);
+  if (!outputFile || !fs.existsSync(outputFile)) {
+    throw new Error('Output file not found after YouTube download.');
+  }
+
+  const ext = path.extname(outputFile).toLowerCase() || '.mp4';
+  const title = metadata?.title || metadata?.fulltitle || 'YouTube Video';
+  const prettyName = sanitizeFilename(title) + ext;
+
+  return { outputFile, prettyName };
+}
+
+/**
  * Process a download job in-process (no worker/queue).
  * Wrapped in the download concurrency limiter.
  */
@@ -311,6 +361,8 @@ async function processJob(jobId) {
         result = await processInstagramJob(jobId, job);
       } else if (job.platform === 'facebook') {
         result = await processFacebookJob(jobId, job);
+      } else if (job.platform === 'youtube') {
+        result = await processYouTubeJob(jobId, job);
       } else {
          throw new Error(`Platform ${job.platform} is not supported.`);
       }
@@ -351,26 +403,13 @@ const submitDownload = asyncHandler(async (req, res) => {
 
   const detectedPlatform = urlCheck.platform;
 
-  // Step 2: YouTube & Facebook → use the new videoService (direct extraction, synchronous)
-  // No platform/type field required from the client for these platforms.
-  if (detectedPlatform === 'youtube' || detectedPlatform === 'facebook') {
-    try {
-      logger.info(`[Controller] Direct extraction for ${detectedPlatform}: ${urlCheck.url.href}`);
-      const mediaData = await getMediaData(urlCheck.url.href);
-      return res.status(200).json({
-        success: true,
-        ...mediaData,
-      });
-    } catch (err) {
-      throw new AppError(err.message || 'Extraction failed. All APIs exhausted.', 500, 'EXTRACTION_ERROR');
-    }
-  }
-
-  // Step 3: Instagram / other platforms → validate platform & type, use async job queue
-  const platformCheck = validatePlatform(platform);
+  // Step 2: Validate platform & type
+  const actualPlatform = platform || detectedPlatform;
+  const platformCheck = validatePlatform(actualPlatform);
   if (!platformCheck.valid) throw new AppError(platformCheck.error, 400, 'INVALID_PLATFORM');
 
-  const typeCheck = validateMediaType(type);
+  const actualType = type || 'video';
+  const typeCheck = validateMediaType(actualType);
   if (!typeCheck.valid) throw new AppError(typeCheck.error, 400, 'INVALID_TYPE');
 
   if (platform && detectedPlatform !== platform) {
@@ -381,12 +420,12 @@ const submitDownload = asyncHandler(async (req, res) => {
     );
   }
 
-  // Create job
+  // Step 3: All platforms → async job queue with yt-dlp
   const jobId = uuidv4();
   const jobRecord = createJob(jobId, {
     url: urlCheck.url.href,
-    platform,
-    type,
+    platform: actualPlatform,
+    type: actualType,
     formatId,
   });
 
@@ -394,7 +433,7 @@ const submitDownload = asyncHandler(async (req, res) => {
 
   processJob(jobId).catch(() => {});
 
-  logger.info(`[Controller] Started async job ${jobId} — ${platform}/${type}`);
+  logger.info(`[Controller] Started async job ${jobId} — ${actualPlatform}/${actualType}`);
 
   res.status(202).json({
     success: true,
