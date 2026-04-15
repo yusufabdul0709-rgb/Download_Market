@@ -15,6 +15,7 @@ function getClient() {
   if (_client) return _client;
 
   const opts = {
+    enabled: true,
     host: config.redis.host,
     port: config.redis.port,
     password: config.redis.password || undefined,
