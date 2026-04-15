@@ -59,6 +59,24 @@ const features = [
 
 const platforms = [
   {
+    name: 'YouTube Video',
+    icon: Video,
+    path: '/youtube/video',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    borderColor: 'hover:border-red-300',
+    description: 'Download YouTube Videos up to 4K',
+  },
+  {
+    name: 'YouTube Shorts',
+    icon: Film,
+    path: '/youtube/shorts',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    borderColor: 'hover:border-red-300',
+    description: 'Save YouTube Shorts instantly',
+  },
+  {
     name: 'Facebook Reels',
     icon: Film,
     path: '/facebook/reels',
@@ -132,6 +150,10 @@ const LandingPage = () => {
       navigate('/facebook/post', { state: { url: inputUrl } });
     } else if (plat === 'facebook-reels') {
       navigate('/facebook/reels', { state: { url: inputUrl } });
+    } else if (plat === 'youtube') {
+      navigate('/youtube/video', { state: { url: inputUrl } });
+    } else if (plat === 'youtube-shorts') {
+      navigate('/youtube/shorts', { state: { url: inputUrl } });
     } else {
       navigate('/instagram/reels', { state: { url: inputUrl } });
     }

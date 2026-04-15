@@ -34,11 +34,11 @@ const generalLimiter = rateLimit({
 
 /**
  * Stricter limiter for the download submission endpoint.
- * 10 submissions per minute per IP.
+ * 5 submissions per minute per IP.
  */
 const downloadLimiter = rateLimit({
   windowMs: 60_000,
-  max: 10,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,

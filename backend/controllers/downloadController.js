@@ -11,6 +11,7 @@ const { enqueueDownload } = require('../services/concurrencyQueue');
 const { deleteFile, ensureTempDir } = require('../services/cleanupService');
 const { validateUrl, validatePlatform, validateMediaType } = require('../utils/validator');
 const { buildDownloadArgs, parseProgress, fetchMetadata, normaliseMediaUrl } = require('../utils/ytdlp');
+const { getMediaData } = require('../services/videoService');
 const axios = require('axios');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
@@ -344,18 +345,35 @@ async function processJob(jobId) {
 const submitDownload = asyncHandler(async (req, res) => {
   const { url, platform, type, formatId } = req.body;
 
-  // Validation
+  // Step 1: Always validate the URL first
   const urlCheck = validateUrl(url);
   if (!urlCheck.valid) throw new AppError(urlCheck.error, 400, 'INVALID_URL');
 
+  const detectedPlatform = urlCheck.platform;
+
+  // Step 2: YouTube & Facebook → use the new videoService (direct extraction, synchronous)
+  // No platform/type field required from the client for these platforms.
+  if (detectedPlatform === 'youtube' || detectedPlatform === 'facebook') {
+    try {
+      logger.info(`[Controller] Direct extraction for ${detectedPlatform}: ${urlCheck.url.href}`);
+      const mediaData = await getMediaData(urlCheck.url.href);
+      return res.status(200).json({
+        success: true,
+        ...mediaData,
+      });
+    } catch (err) {
+      throw new AppError(err.message || 'Extraction failed. All APIs exhausted.', 500, 'EXTRACTION_ERROR');
+    }
+  }
+
+  // Step 3: Instagram / other platforms → validate platform & type, use async job queue
   const platformCheck = validatePlatform(platform);
   if (!platformCheck.valid) throw new AppError(platformCheck.error, 400, 'INVALID_PLATFORM');
 
   const typeCheck = validateMediaType(type);
   if (!typeCheck.valid) throw new AppError(typeCheck.error, 400, 'INVALID_TYPE');
 
-  const detectedPlatform = urlCheck.platform;
-  if (detectedPlatform !== platform) {
+  if (platform && detectedPlatform !== platform) {
     throw new AppError(
       `URL domain does not match the declared platform "${platform}".`,
       400,
@@ -369,16 +387,14 @@ const submitDownload = asyncHandler(async (req, res) => {
     url: urlCheck.url.href,
     platform,
     type,
-    formatId, // Pass formatId so processJob knows if it's 'audio' etc.
+    formatId,
   });
 
-  // Store formatId on the job for processJob to use
   jobRecord.formatId = formatId || null;
 
-  // Start processing in background (non-blocking, concurrency-controlled)
   processJob(jobId).catch(() => {});
 
-  logger.info(`[Controller] Started job ${jobId} — ${platform}/${type}`);
+  logger.info(`[Controller] Started async job ${jobId} — ${platform}/${type}`);
 
   res.status(202).json({
     success: true,

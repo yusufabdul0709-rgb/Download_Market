@@ -9,14 +9,22 @@ import {
   Video,
   Image,
   Music,
-  Film,
+  Film
 } from 'lucide-react';
-import { InstagramIcon as Instagram, FacebookIcon as Facebook } from './BrandIcons';
+import { InstagramIcon as Instagram, FacebookIcon as Facebook, YoutubeIcon as YoutubeBrand } from './BrandIcons';
 
 const navLinks = [
   {
     label: 'Home',
     path: '/',
+  },
+  {
+    label: 'YouTube',
+    icon: YoutubeBrand,
+    children: [
+      { label: 'Video', path: '/youtube/video', icon: Video },
+      { label: 'Shorts', path: '/youtube/shorts', icon: Film },
+    ],
   },
   {
     label: 'Facebook',

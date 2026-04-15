@@ -25,17 +25,19 @@ function validateUrl(rawUrl) {
   }
 
   const hostname = parsed.hostname.toLowerCase();
-  const matched = config.supportedDomains.find((d) => hostname === d);
+  const matched = config.supportedDomains.find((d) => hostname.includes(d));
 
   if (!matched) {
     return {
       valid: false,
-      error: `Unsupported domain "${hostname}". Supported: Instagram and Facebook.`,
+      error: `Unsupported domain "${hostname}". Supported: YouTube, Instagram and Facebook.`,
     };
   }
 
   // Detect platform
-  const platform = matched.includes('instagram') ? 'instagram' : 'facebook';
+  let platform = 'facebook';
+  if (matched.includes('instagram')) platform = 'instagram';
+  if (matched.includes('youtu')) platform = 'youtube';
 
   // Reject Instagram browse/collection pages (not downloadable)
   if (platform === 'instagram') {

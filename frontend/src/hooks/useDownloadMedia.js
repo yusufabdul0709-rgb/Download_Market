@@ -165,6 +165,7 @@ const useDownloadMedia = () => {
         formatId: format.formatId || null,
       });
 
+      // Case 1: Async job flow (Instagram — returns jobId)
       if (result.jobId) {
         setDownloadState((prev) => ({
           ...prev,
@@ -173,13 +174,36 @@ const useDownloadMedia = () => {
         }));
         toast('Download started, processing...', { icon: '⏳' });
         pollJobStatus(result.jobId, format);
-      } else {
-        // If backend returns a direct download URL
-        if (result.downloadUrl) {
-          triggerBrowserDownload(result.downloadUrl, result.filename);
-          toast.success('Download started!');
-          resetDownloadState();
+        return;
+      }
+
+      // Case 2: Direct extraction (YouTube/Facebook — returns download_links)
+      if (result.download_links && result.download_links.length > 0) {
+        // Pick the best matching link for the requested format
+        const requestedQuality = format.quality || format.formatId || '';
+        let bestLink = result.download_links.find(
+          (l) => l.quality === requestedQuality
+        );
+        if (!bestLink) bestLink = result.download_links[0];
+
+        if (bestLink?.url) {
+          setDownloadState((prev) => ({
+            ...prev,
+            status: 'completed',
+            progress: 100,
+          }));
+          toast.success(`Download ready via ${result.provider_used || 'API'}`);
+          triggerBrowserDownload(bestLink.url, result.title || `download.mp4`);
+          setTimeout(() => resetDownloadState(), 2000);
+          return;
         }
+      }
+
+      // Case 3: Direct download URL (legacy/fallback)
+      if (result.downloadUrl) {
+        triggerBrowserDownload(result.downloadUrl, result.filename);
+        toast.success('Download started!');
+        resetDownloadState();
       }
     } catch (err) {
       const message = err.message || 'Failed to start download. Please try again.';

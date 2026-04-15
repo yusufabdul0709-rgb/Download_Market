@@ -14,6 +14,7 @@
     "@xaviabot/fb-downloader": "^1.0.14",
     "archiver": "^7.0.1",
     "axios": "^1.15.0",
+    "axios-retry": "^4.5.0",
     "btch-downloader": "^6.0.26",
     "bullmq": "^5.7.0",
     "cors": "^2.8.5",

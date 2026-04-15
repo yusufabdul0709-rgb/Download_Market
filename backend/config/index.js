@@ -56,9 +56,28 @@ const config = {
   // ── Public URL ───────────────────────────────────────────────────────────
   baseUrl: process.env.BASE_URL || 'http://localhost:5000',
 
+  redis: (() => {
+    if (process.env.REDIS_URL) {
+      try {
+        const u = new URL(process.env.REDIS_URL);
+        return {
+          enabled: true,
+          host: u.hostname,
+          port: parseInt(u.port, 10) || 6379,
+          password: u.password || null,
+          tls: u.protocol === 'rediss:' ? {} : false,
+        };
+      } catch { }
+    }
+    return { enabled: false, host: '127.0.0.1', port: 6379, password: null, tls: false };
+  })(),
+
   // ── Supported platforms / domains ────────────────────────────────────────
-  supportedPlatforms: ['instagram', 'facebook'],
+  supportedPlatforms: ['instagram', 'facebook', 'youtube'],
   supportedDomains: [
+    'youtube.com',
+    'www.youtube.com',
+    'youtu.be',
     'instagram.com',
     'www.instagram.com',
     'facebook.com',
