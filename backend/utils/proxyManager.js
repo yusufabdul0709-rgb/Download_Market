@@ -82,8 +82,36 @@ function getProxyAgent() {
   };
 }
 
+function maskProxyUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const hasAuth = Boolean(parsed.username || parsed.password);
+    const auth = hasAuth ? '***:***@' : '';
+    return `${parsed.protocol}//${auth}${parsed.host}`;
+  } catch {
+    return 'invalid-proxy-url';
+  }
+}
+
+function getProxyStats() {
+  recoverFromCooldown();
+  return {
+    total: proxies.length,
+    active: proxies.filter((proxy) => !proxy.disabled).length,
+    disabled: proxies.filter((proxy) => proxy.disabled).length,
+    proxies: proxies.map((proxy) => ({
+      url: maskProxyUrl(proxy.url),
+      successCount: proxy.successCount,
+      failCount: proxy.failCount,
+      disabled: proxy.disabled,
+      disabledAt: proxy.disabledAt,
+    })),
+  };
+}
+
 module.exports = {
   getProxyAgent,
   markSuccess,
   markFailure,
+  getProxyStats,
 };

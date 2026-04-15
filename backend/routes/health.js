@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { healthCheck } = require('../controllers/healthController');
+const { healthCheck, proxyHealthCheck } = require('../controllers/healthController');
 
 const router = Router();
 
@@ -10,5 +10,6 @@ const router = Router();
  * Returns API and Redis health status.
  */
 router.get('/', healthCheck);
+router.get('/proxies', proxyHealthCheck);
 
 module.exports = router;

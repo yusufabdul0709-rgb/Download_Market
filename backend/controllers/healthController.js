@@ -2,6 +2,7 @@
 
 const { asyncHandler } = require('../utils/asyncHandler');
 const config = require('../config');
+const { getProxyStats } = require('../utils/proxyManager');
 
 /**
  * GET /api/health
@@ -22,4 +23,17 @@ const healthCheck = asyncHandler(async (_req, res) => {
   });
 });
 
-module.exports = { healthCheck };
+/**
+ * GET /api/health/proxies
+ *
+ * Returns non-sensitive runtime proxy pool diagnostics.
+ */
+const proxyHealthCheck = asyncHandler(async (_req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'healthy',
+    proxyPool: getProxyStats(),
+  });
+});
+
+module.exports = { healthCheck, proxyHealthCheck };
