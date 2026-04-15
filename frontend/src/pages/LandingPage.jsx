@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Download,
@@ -18,13 +18,11 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { FacebookIcon as Facebook, InstagramIcon as Instagram } from '../components/BrandIcons';
-import URLInput from '../components/URLInput';
 import IframeAdBanner from '../components/IframeAdBanner';
 import HowToDownload from '../components/HowToDownload';
 import SEOHead from '../components/SEOHead';
 import SEOFaq from '../components/SEOFaq';
-import usePopunder from '../hooks/usePopunder';
-import { detectPlatform } from '../utils/helpers';
+import QuickDownloaderCard from '../components/QuickDownloaderCard';
 
 const features = [
   {
@@ -139,26 +137,6 @@ const stats = [
 ];
 
 const LandingPage = () => {
-  const [url, setUrl] = useState('');
-  const navigate = useNavigate();
-  const triggerPopunder = usePopunder();
-
-  const handleSubmit = (inputUrl) => {
-    triggerPopunder();
-    const plat = detectPlatform(inputUrl);
-    if (plat === 'facebook' || plat === 'facebook-post') {
-      navigate('/facebook/post', { state: { url: inputUrl } });
-    } else if (plat === 'facebook-reels') {
-      navigate('/facebook/reels', { state: { url: inputUrl } });
-    } else if (plat === 'youtube') {
-      navigate('/youtube/video', { state: { url: inputUrl } });
-    } else if (plat === 'youtube-shorts') {
-      navigate('/youtube/shorts', { state: { url: inputUrl } });
-    } else {
-      navigate('/instagram/reels', { state: { url: inputUrl } });
-    }
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -221,6 +199,12 @@ const LandingPage = () => {
             Download your favorite YouTube, Facebook, and Instagram Videos, Reels, and Shorts in high quality.
           </motion.p>
         </motion.div>
+      </section>
+
+      <section className="relative py-6 px-4 sm:px-6 z-10">
+        <div className="max-w-6xl mx-auto">
+          <QuickDownloaderCard />
+        </div>
       </section>
 
       {/* Platform Cards */}

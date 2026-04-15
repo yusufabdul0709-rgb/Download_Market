@@ -24,30 +24,65 @@ const pageMap = {
 
 const SeoLandingPage = ({ platform }) => {
   const cfg = pageMap[platform] || pageMap['YouTube Shorts'];
+  const isInstagramReels = platform === 'Instagram Reels';
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
       <SEOHead title={cfg.title} description={`${cfg.description} Keywords: ${cfg.keywords}.`} />
-      <h1 className="text-3xl font-bold text-text-primary mb-4">{cfg.title}</h1>
-      <p className="text-text-secondary mb-6">{cfg.description}</p>
+      {isInstagramReels ? (
+        <>
+          <h1 className="text-3xl font-bold text-text-primary mb-4">Download Instagram Reels Online Free</h1>
+          <p className="text-text-secondary mb-6">Download Instagram reels in HD quality without watermark.</p>
+        </>
+      ) : (
+        <>
+          <h1 className="text-3xl font-bold text-text-primary mb-4">{cfg.title}</h1>
+          <p className="text-text-secondary mb-6">{cfg.description}</p>
+        </>
+      )}
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">How to use</h2>
-        <ol className="list-decimal pl-5 space-y-2 text-text-secondary">
-          <li>Copy the public video URL from the platform.</li>
-          <li>Paste it into the downloader input box.</li>
-          <li>Click fetch and choose your preferred quality.</li>
-          <li>Tap download and wait for the file to be ready.</li>
-        </ol>
+        {isInstagramReels ? (
+          <ol className="list-decimal pl-5 space-y-2 text-text-secondary">
+            <li>Copy reel link</li>
+            <li>Paste in input</li>
+            <li>Click download</li>
+            <li>Save video</li>
+          </ol>
+        ) : (
+          <ol className="list-decimal pl-5 space-y-2 text-text-secondary">
+            <li>Copy the public video URL from the platform.</li>
+            <li>Paste it into the downloader input box.</li>
+            <li>Click fetch and choose your preferred quality.</li>
+            <li>Tap download and wait for the file to be ready.</li>
+          </ol>
+        )}
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-3">Features</h2>
+        <ul className="list-disc pl-5 space-y-2 text-text-secondary">
+          <li>Free</li>
+          <li>No watermark</li>
+          <li>Fast</li>
+        </ul>
       </section>
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">FAQ</h2>
-        <div className="space-y-3 text-text-secondary">
-          <p><strong>Is this free?</strong> Yes, the downloader is free to use.</p>
-          <p><strong>Do you store content?</strong> No, we do not store downloaded content.</p>
-          <p><strong>What if download fails?</strong> Retry after a moment or use another public URL.</p>
-        </div>
+        {isInstagramReels ? (
+          <div className="space-y-3 text-text-secondary">
+            <p>Safe? Yes.</p>
+            <p>Free? Yes.</p>
+          </div>
+        ) : (
+          <div className="space-y-3 text-text-secondary">
+            <p><strong>Is this free?</strong> Yes, the downloader is free to use.</p>
+            <p><strong>Do you store content?</strong> No, we do not store downloaded content.</p>
+            <p><strong>What if download fails?</strong> Retry after a moment or use another public URL.</p>
+          </div>
+        )}
       </section>
 
       <Link to={cfg.path} className="inline-block px-5 py-3 rounded-xl bg-primary text-white font-semibold">

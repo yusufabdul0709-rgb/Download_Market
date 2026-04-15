@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "keepalive": "node keepAlive.js",
     "postinstall": "node scripts/download-ytdlp.js",
     "lint": "eslint ."
   },

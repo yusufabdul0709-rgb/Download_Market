@@ -20,6 +20,7 @@ const errorHandler = require('./middlewares/errorHandler');
 const downloadRoutes = require('./routes/download');
 const previewRoutes = require('./routes/preview');
 const healthRoutes = require('./routes/health');
+const getVideo = require('./services/downloader');
 
 const { startCleanupScheduler, ensureTempDir } = require('./services/cleanupService');
 const logger = require('./utils/logger');
@@ -74,6 +75,23 @@ app.use('/api', generalLimiter);
 app.use('/api/download', downloadRoutes);
 app.use('/api/preview', previewRoutes);
 app.use('/api/health', healthRoutes);
+
+// Lightweight compatibility route for simple frontend fetch("/download")
+app.post('/download', async (req, res) => {
+  const { url } = req.body || {};
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'URL required' });
+  }
+  try {
+    const result = await getVideo(url);
+    return res.json(result);
+  } catch {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+});
 
 // ── API root info
 app.get('/api', (_req, res) => {
