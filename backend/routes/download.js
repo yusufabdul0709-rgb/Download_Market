@@ -10,6 +10,7 @@ const { downloadLimiter } = require('../middlewares/rateLimiter');
 const getVideo = require('../services/downloader');
 const { validateUrl } = require('../utils/validator');
 const { addVideoJob, getVideoJobStatus } = require('../queue/jobQueue');
+const YTDlpWrap = require('yt-dlp-wrap').default;
 const {
   getCachedResult,
   getInflightJobId,
@@ -17,12 +18,50 @@ const {
 } = require('../services/jobResultStore');
 
 const router = Router();
+const ytDlp = new YTDlpWrap();
 
 /**
  * POST /api/download
  * Submit a new download job.
  */
 router.post('/', downloadLimiter, submitDownload);
+
+/**
+ * GET /api/download?url=<video_url>
+ * Direct metadata/download URL extractor using yt-dlp-wrap.
+ */
+router.get('/', async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required' });
+  }
+
+  try {
+    const videoInfo = await ytDlp.getVideoInfo(url);
+    const title = videoInfo?.title || 'video';
+    const downloadUrl =
+      videoInfo?.url
+      || (Array.isArray(videoInfo?.formats) && videoInfo.formats.length > 0
+        ? videoInfo.formats[videoInfo.formats.length - 1]?.url
+        : null);
+
+    if (!downloadUrl) {
+      return res.status(500).json({ error: 'Could not extract download URL' });
+    }
+
+    return res.json({
+      title,
+      downloadUrl,
+      thumbnail: videoInfo?.thumbnail || null,
+      duration: videoInfo?.duration || null,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: 'Failed to fetch video info',
+      details: err.message,
+    });
+  }
+});
 
 /**
  * POST /api/download/download

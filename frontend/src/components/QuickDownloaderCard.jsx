@@ -1,33 +1,32 @@
 import { useState } from 'react';
 
 const QuickDownloaderCard = () => {
-  const [url, setUrl] = useState('');
+  const [inputUrl, setInputUrl] = useState('');
+  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
-  const [downloadLink, setDownloadLink] = useState('');
 
-  const downloadVideo = async () => {
-    setDownloadLink('');
-    setStatus('Fetching...');
-
+  const handleDownload = async () => {
     try {
-      const res = await fetch('/api/download/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
-
+      setLoading(true);
+      setStatus('Fetching...');
+      const res = await fetch(`/api/download?url=${encodeURIComponent(inputUrl)}`);
       const data = await res.json();
 
-      if (data.success) {
-        setStatus('Success');
-        setDownloadLink(data.data?.download || '');
-      } else {
-        setStatus(data.message || 'Server error');
+      if (data.error) {
+        alert(`Error: ${data.error}`);
+        setStatus(data.error);
+        return;
       }
-    } catch {
+
+      window.open(data.downloadUrl, '_blank');
+      setStatus('Success');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      alert('Something went wrong!');
       setStatus('Server error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,27 +38,23 @@ const QuickDownloaderCard = () => {
         <input
           id="urlInput"
           type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          value={inputUrl}
+          onChange={(e) => setInputUrl(e.target.value)}
           placeholder="Paste video link..."
           className="w-full p-3 border rounded-lg mb-4"
         />
 
         <button
           type="button"
-          onClick={downloadVideo}
+          onClick={handleDownload}
+          disabled={loading}
           className="w-full bg-indigo-600 text-white py-3 rounded-lg"
         >
-          Download
+          {loading ? 'Fetching...' : 'Download'}
         </button>
 
         <div id="status" className="mt-4 text-center">
           {status && <p className={status === 'Success' ? 'text-green-600' : 'text-red-500'}>{status}</p>}
-          {downloadLink && (
-            <a className="text-indigo-600 underline" href={downloadLink}>
-              Download
-            </a>
-          )}
         </div>
       </div>
     </div>

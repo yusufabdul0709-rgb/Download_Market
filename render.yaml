@@ -8,6 +8,7 @@ services:
     region: oregon
     plan: free
     buildCommand: |
+      pip install yt-dlp
       cd backend && npm install
       cd ../frontend && npm install && npm run build
     startCommand: cd backend && node server.js
