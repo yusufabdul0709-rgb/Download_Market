@@ -7,6 +7,11 @@ export default defineConfig(({ mode }) => ({
     react(),
     tailwindcss(),
   ],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test-setup.js'],
+  },
   server: {
     // Development proxy — forwards /api/* to the local backend
     proxy: {

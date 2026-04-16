@@ -175,13 +175,15 @@ function runDownload(args, jobId, timeoutMs = JOB_TIMEOUT_MS) {
  * Build download args using the shared baseArgs() from ytdlp.js.
  * This ensures cookies, anti-bot headers, proxy, and geo-bypass are always used.
  */
-function buildJobArgs({ url, type, formatId, outTemplate }) {
+function buildJobArgs({ url, type, formatId, outTemplate, platform }) {
   const args = [...baseArgs()];
 
   if (formatId === 'audio' || type === 'audio') {
     args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
   } else if (formatId && formatId !== 'best') {
     args.push('-f', `${formatId}+bestaudio/best`);
+  } else if (platform === 'instagram') {
+    args.push('-f', 'best[ext=mp4]/best');
   } else {
     // Best quality with video+audio merged
     args.push('-f', 'bestvideo+bestaudio/best');
@@ -214,7 +216,7 @@ async function processPlatformJob(jobId, job, platformLabel) {
   // Step 2: Build args with full anti-bot protection
   const formatId = job.formatId || null;
   const outTemplate = `${outBase}.%(ext)s`;
-  const args = buildJobArgs({ url, type, formatId, outTemplate });
+  const args = buildJobArgs({ url, type, formatId, outTemplate, platform: job.platform });
 
   updateJob(jobId, { progress: 15 });
 
@@ -481,4 +483,4 @@ const serveFile = asyncHandler(async (req, res) => {
   readStream.pipe(res);
 });
 
-module.exports = { submitDownload, getJobStatus, serveFile };
+module.exports = { submitDownload, getJobStatus, serveFile, buildJobArgs };

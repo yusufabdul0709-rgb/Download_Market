@@ -54,14 +54,7 @@ function baseArgs() {
     
     // Retry internal extraction errors
     '--extractor-retries', '5',
-    
-    // Pace requests to avoid 429 errors — slightly more aggressive sleep for Stability
-    '--sleep-interval', '2',
-    '--max-sleep-interval', '5',
   ];
-
-  // Wait if throttled
-  args.push('--sleep-requests', '2');
 
   // Cookies are the MOST IMPORTANT part for anti-bot
   // On Render, we recommend uploading a cookies.txt file
@@ -77,6 +70,22 @@ function baseArgs() {
   args.push('--extractor-args', 'instagram:compatible_formats');
 
   return args;
+}
+
+/**
+ * Build the yt-dlp flags for actual download jobs.
+ * Extends baseArgs() with rate-pacing sleep flags that are appropriate for
+ * downloads but must NOT be present on metadata fetch invocations.
+ *
+ * @returns {string[]}
+ */
+function downloadArgs() {
+  return [
+    ...baseArgs(),
+    '--sleep-interval', '2',
+    '--max-sleep-interval', '5',
+    '--sleep-requests', '2',
+  ];
 }
 
 function fallbackArgs() {
@@ -228,7 +237,7 @@ async function fetchMetadata(url) {
       ];
 
       const json = await runYtdlp(args, {
-        timeoutMs: 9_000,
+        timeoutMs: 30_000,
       });
 
       try {
@@ -254,7 +263,7 @@ async function fetchMetadataWithFallback(url) {
     const data = await retryWithBackoff(
       async () => {
         const args = [...argsFactory(), '-J', normalisedUrl];
-        const json = await runYtdlp(args, { timeoutMs: 9_000 });
+        const json = await runYtdlp(args, { timeoutMs: 30_000 });
         return JSON.parse(json);
       },
       {
@@ -298,7 +307,7 @@ async function buildDownloadArgs({ url, type, formatId, outPath }) {
   const normalisedUrl = await normaliseMediaUrl(url);
 
   const args = [
-    ...baseArgs(),
+    ...downloadArgs(),
   ];
 
   if (type === 'audio') {
@@ -339,4 +348,5 @@ module.exports = {
   parseProgress,
   normaliseMediaUrl,
   baseArgs,
+  downloadArgs,
 };
